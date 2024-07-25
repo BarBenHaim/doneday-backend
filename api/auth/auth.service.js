@@ -1,10 +1,10 @@
+import fs from 'fs'
 import Cryptr from 'cryptr'
 import bcrypt from 'bcrypt'
 
 import { userService } from '../user/user.service.js'
 import { logger } from '../../services/logger.service.js'
 
-const cryptr = new Cryptr(process.env.SECRET || 'Secret-Puk-1234')
 
 export const authService = {
 	signup,
@@ -12,6 +12,9 @@ export const authService = {
 	getLoginToken,
 	validateToken,
 }
+const cryptString = fs.readFileSync('config/crypt_key', 'utf8')
+export const cryptr = new Cryptr(process.env.SECRET1 || cryptString)
+
 
 async function login(username, password) {
 	logger.debug(`auth.service - login with username: ${username}`)
