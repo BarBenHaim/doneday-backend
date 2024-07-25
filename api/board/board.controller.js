@@ -10,7 +10,7 @@ export async function getBoards(req, res) {
         //     sortDir: req.query.sortDir || 1,
 		// 	pageIdx: req.query.pageIdx,
 		// }
-		const boards = await boardService.query(filterBy)
+		const boards = await boardService.query()
 		res.json(boards)
 	} catch (err) {
 		logger.error('Failed to get boards', err)
@@ -34,6 +34,7 @@ export async function addBoard(req, res) {
 
 	try {
 		// board.owner = loggedinUser
+		logger.debug(req)
 		const addedBoard = await boardService.add(board)
 		res.json(addedBoard)
 	} catch (err) {
@@ -101,3 +102,27 @@ export async function removeBoardMsg(req, res) {
 		res.status(400).send({ err: 'Failed to remove board msg' })
 	}
 }
+
+
+export async function initDB(req, res) {
+	try {
+	  const toys = utilService.readJsonFile('data/board.json')
+	  let boardsToAdd = [...boards]
+	  var boardsAdded = 0
+  
+	  await boardsToAdd.map((board) => {
+		try {
+		  delete board._id
+		  boardService.add(board)
+		  boardsAdded += 1
+		} catch (err) {
+		  logger.error('Failed to add board', err)
+		}
+	  })
+  
+	  res.send(`${boardsAdded} boards added to db`)
+	} catch (err) {
+	  logger.error('Failed to init DB', err)
+	  res.status(500).send({ err: 'Failed to init DB' })
+	}
+  }
