@@ -1,5 +1,6 @@
 import { authService } from './auth.service.js'
 import { logger } from '../../services/logger.service.js'
+import { readJsonFile } from '../../services/util.service.js'
 
 export async function login(req, res) {
 	const { username, password } = req.body
@@ -47,3 +48,26 @@ export async function logout(req, res) {
 		res.status(400).send({ err: 'Failed to logout' })
 	}
 }
+
+export async function initUserDB(req, res) {
+	try {
+	  const users = readJsonFile('api/data/users.json')
+	  let usersToSignup = [...users]
+	  var usersAdded = 0
+  
+	  await Promise.all(usersToSignup.map(async (user) => {
+		try {
+		  delete user._id
+		  authService.signup(user)
+		  usersAdded += 1
+		} catch (err) {
+		  logger.error('Failed to add user', err)
+		}
+	  }))
+  
+	  res.send(`${usersToSignup} users added to db`)
+	} catch (err) {
+	  logger.error('Failed to init users DB', err)
+	  res.status(500).send({ err: 'Failed to init DB' })
+	}
+  }
