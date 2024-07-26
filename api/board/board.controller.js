@@ -1,8 +1,11 @@
 import { logger } from '../../services/logger.service.js'
+import { readJsonFile } from '../../services/util.service.js'
 import { boardService as boardService } from './board.service.js'
 
+
+
 export async function getBoards(req, res) {
-	try {
+    try {
 		// const filterBy = {
 		// 	txt: req.query.txt || '',
 		// 	minSpeed: +req.query.minSpeed || 0,
@@ -10,17 +13,17 @@ export async function getBoards(req, res) {
         //     sortDir: req.query.sortDir || 1,
 		// 	pageIdx: req.query.pageIdx,
 		// }
-		const boards = await boardService.query()
-		res.json(boards)
-	} catch (err) {
-		logger.error('Failed to get boards', err)
-		res.status(400).send({ err: 'Failed to get boards' })
-	}
+        const boards = await boardService.query()
+        res.json(boards)
+    } catch (err) {
+        logger.error('Failed to get boards', err)
+        res.status(400).send({ err: 'Failed to get boards' })
+    }
 }
 
 export async function getBoardById(req, res) {
 	try {
-		const boardId = req.params.id
+		const boardId = req.params._id
 		const board = await boardService.getById(boardId)
 		res.json(board)
 	} catch (err) {
@@ -34,14 +37,48 @@ export async function addBoard(req, res) {
 
 	try {
 		// board.owner = loggedinUser
-		logger.debug(req)
-		const addedBoard = await boardService.add(board)
-		res.json(addedBoard)
+		// logger.debug(req)
+        const { body: board } = req
+        const addedBoard = await boardService.add(board)
+        res.json(addedBoard)
 	} catch (err) {
 		logger.error('Failed to add board', err)
 		res.status(400).send({ err: 'Failed to add board' })
 	}
 }
+
+// export async function addBoard(req, res) {
+//     try {
+//         const board = {
+//             ...req.body,
+//             groups: req.body.groups.map(group => ({
+//                 ...group,
+//                 _id: new mongoose.Types.ObjectId(),
+//                 tasks: group.tasks.map(task => ({
+//                     ...task,
+//                     _id: new mongoose.Types.ObjectId(),
+//                     comments: task.comments.map(comment => ({
+//                         ...comment,
+//                         _id: new mongoose.Types.ObjectId(),
+//                     })),
+//                     checklists: task.checklists.map(checklist => ({
+//                         ...checklist,
+//                         _id: new mongoose.Types.ObjectId(),
+//                         todos: checklist.todos.map(todo => ({
+//                             ...todo,
+//                             _id: new mongoose.Types.ObjectId(),
+//                         })),
+//                     })),
+//                 })),
+//             })),
+//         }
+//         const addedBoard = await boardService.add(board)
+//         res.json(addedBoard)
+//     } catch (err) {
+//         logger.error('Failed to add board', err)
+//         res.status(400).send({ err: 'Failed to add board' })
+//     }
+// }
 
 export async function updateBoard(req, res) {
 	// const { loggedinUser, body: board } = req
@@ -53,8 +90,9 @@ export async function updateBoard(req, res) {
     // }
 
 	try {
-		const updatedBoard = await boardService.update(board)
-		res.json(updatedBoard)
+		const { body: board } = req
+        const updatedBoard = await boardService.update(board)
+        res.json(updatedBoard)
 	} catch (err) {
 		logger.error('Failed to update board', err)
 		res.status(400).send({ err: 'Failed to update board' })
@@ -106,8 +144,8 @@ export async function removeBoardMsg(req, res) {
 
 export async function initDB(req, res) {
 	try {
-	  const toys = utilService.readJsonFile('data/board.json')
-	  let boardsToAdd = [...boards]
+	  const board = readJsonFile('api/data/board.json')
+	  let boardsToAdd = [...board]
 	  var boardsAdded = 0
   
 	  await boardsToAdd.map((board) => {
@@ -126,3 +164,81 @@ export async function initDB(req, res) {
 	  res.status(500).send({ err: 'Failed to init DB' })
 	}
   }
+
+  export async function addGroup(req, res) {
+    try {
+        const boardId = req.params.id
+        const { groupTitle } = req.body
+        const group = await boardService.addGroup(boardId, groupTitle)
+        res.json(group)
+    } catch (err) {
+        logger.error('Failed to add group', err)
+        res.status(400).send({ err: 'Failed to add group' })
+    }
+}
+
+export async function updateGroup(req, res) {
+    try {
+        const boardId = req.params.boardId
+        const groupId = req.params.groupId
+        const updatedGroup = req.body
+        const group = await boardService.updateGroup(boardId, groupId, updatedGroup)
+        res.json(group)
+    } catch (err) {
+        logger.error('Failed to update group', err)
+        res.status(400).send({ err: 'Failed to update group' })
+    }
+}
+
+export async function removeGroup(req, res) {
+    try {
+        const boardId = req.params.boardId
+        const groupId = req.params.groupId
+        const removedGroup = await boardService.removeGroup(boardId, groupId)
+        res.json(removedGroup)
+    } catch (err) {
+        logger.error('Failed to remove group', err)
+        res.status(400).send({ err: 'Failed to remove group' })
+    }
+}
+
+export async function addTask(req, res) {
+    try {
+        const boardId = req.params.boardId
+        const groupId = req.params.groupId
+        const task = req.body
+        const addedTask = await boardService.addTask(boardId, groupId, task)
+        res.json(addedTask)
+    } catch (err) {
+        logger.error('Failed to add task', err)
+        res.status(400).send({ err: 'Failed to add task' })
+    }
+}
+
+export async function updateTask(req, res) {
+    try {
+        const boardId = req.params.boardId
+        const groupId = req.params.groupId
+        const taskId = req.params.taskId
+        const taskChanges = req.body
+        const updatedTask = await boardService.updateTask(boardId, groupId, taskId, taskChanges)
+        res.json(updatedTask)
+    } catch (err) {
+        logger.error('Failed to update task', err)
+        res.status(400).send({ err: 'Failed to update task' })
+    }
+}
+
+export async function removeTask(req, res) {
+    try {
+        const boardId = req.params.boardId
+        const groupId = req.params.groupId
+        const taskId = req.params.taskId
+        const removedTask = await boardService.removeTask(boardId, groupId, taskId)
+        res.json(removedTask)
+    } catch (err) {
+        logger.error('Failed to remove task', err)
+        res.status(400).send({ err: 'Failed to remove task' })
+    }
+}
+  

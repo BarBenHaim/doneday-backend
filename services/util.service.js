@@ -1,3 +1,9 @@
+import fs from 'fs'
+import fr from 'follow-redirects'
+
+const {http, https} = fr
+
+
 export function makeId(length = 5) {
 	var txt = ''
 	var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -72,6 +78,31 @@ export function randomPastTime() {
 
 export function readJsonFile(path) {
 	const str = fs.readFileSync(path, 'utf8')
+	console.log('File path:', path);
 	const json = JSON.parse(str)
 	return json
+  }
+
+ export function httpGet(url) {
+	const protocol = url.startsWith('https') ? https : http
+	const options = {
+	  method: 'GET'
+	}
+  
+	return new Promise((resolve, reject) => {
+	  const req = protocol.request(url, options, (res) => {
+		let data = ''
+		res.on('data', (chunk) => {
+		  data += chunk
+		})
+		res.on('end', () => {
+		  resolve(data)
+		})
+	  })
+	  req.on('error', (err) => {
+		reject(err)
+	  })
+	  req.end()
+	})
+  
   }

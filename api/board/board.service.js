@@ -9,12 +9,18 @@ const PAGE_SIZE = 3
 
 export const boardService = {
 	remove,
-	query,
-	getById,
-	add,
-	update,
-	addBoardMsg,
-	removeBoardMsg,
+    query,
+    getById,
+    add,
+    update,
+    addBoardMsg,
+    removeBoardMsg,
+    addGroup,
+    updateGroup,
+    removeGroup,
+    addTask,
+    updateTask,
+    removeTask,
 }
 
 async function query(filterBy = { txt: '' }) {
@@ -143,3 +149,121 @@ function _buildSort(filterBy) {
     if(!filterBy.sortField) return {}
     return { [filterBy.sortField]: filterBy.sortDir }
 }
+
+async function addGroup(boardId, groupTitle) {
+    try {
+        const collection = await dbService.getCollection('board')
+        const board = await getById(boardId)
+
+        const group = {
+            _id: makeId(),
+            title: groupTitle,
+            tasks: [],
+            style: {},
+            archivedAt: null
+        }
+
+        board.groups.push(group)
+        await collection.updateOne({ _id: ObjectId(boardId) }, { $set: { groups: board.groups } })
+        return group
+    } catch (err) {
+        logger.error(`cannot add group to board ${boardId}`, err)
+        throw err
+    }
+}
+
+async function updateGroup(boardId, groupId, updatedGroup) {
+    try {
+        const collection = await dbService.getCollection('board')
+        const board = await getById(boardId)
+        
+        const groupIdx = board.groups.findIndex(group => group._id === groupId)
+        if (groupIdx === -1) throw new Error('Group not found')
+
+        board.groups[groupIdx] = { ...board.groups[groupIdx], ...updatedGroup }
+        await collection.updateOne({ _id: ObjectId(boardId) }, { $set: { groups: board.groups } })
+        return board.groups[groupIdx]
+    } catch (err) {
+        logger.error(`cannot update group in board ${boardId}`, err)
+        throw err
+    }
+}
+
+async function removeGroup(boardId, groupId) {
+    try {
+        const collection = await dbService.getCollection('board')
+        const board = await getById(boardId)
+        
+        const groupIdx = board.groups.findIndex(group => group._id === groupId)
+        if (groupIdx === -1) throw new Error('Group not found')
+
+        const removedGroup = board.groups.splice(groupIdx, 1)
+        await collection.updateOne({ _id: ObjectId(boardId) }, { $set: { groups: board.groups } })
+        return removedGroup
+    } catch (err) {
+        logger.error(`cannot remove group from board ${boardId}`, err)
+        throw err
+    }
+}
+
+async function addTask(boardId, groupId, task) {
+    try {
+        const collection = await dbService.getCollection('board')
+        const board = await getById(boardId)
+
+        const group = board.groups.find(group => group._id === groupId)
+        if (!group) throw new Error('Group not found')
+
+        const newTask = {
+            _id: makeId(),
+            ...task
+        }
+
+        group.tasks.push(newTask)
+        await collection.updateOne({ _id: ObjectId(boardId) }, { $set: { groups: board.groups } })
+        return newTask
+    } catch (err) {
+        logger.error(`cannot add task to group ${groupId} in board ${boardId}`, err)
+        throw err
+    }
+}
+
+async function updateTask(boardId, groupId, taskId, taskChanges) {
+    try {
+        const collection = await dbService.getCollection('board')
+        const board = await getById(boardId)
+
+        const group = board.groups.find(group => group._id === groupId)
+        if (!group) throw new Error('Group not found')
+
+        const taskIdx = group.tasks.findIndex(task => task._id === taskId)
+        if (taskIdx === -1) throw new Error('Task not found')
+
+        group.tasks[taskIdx] = { ...group.tasks[taskIdx], ...taskChanges }
+        await collection.updateOne({ _id: ObjectId(boardId) }, { $set: { groups: board.groups } })
+        return group.tasks[taskIdx]
+    } catch (err) {
+        logger.error(`cannot update task in group ${groupId} in board ${boardId}`, err)
+        throw err
+    }
+}
+
+async function removeTask(boardId, groupId, taskId) {
+    try {
+        const collection = await dbService.getCollection('board')
+        const board = await getById(boardId)
+
+        const group = board.groups.find(group => group._id === groupId)
+        if (!group) throw new Error('Group not found')
+
+        const taskIdx = group.tasks.findIndex(task => task._id === taskId)
+        if (taskIdx === -1) throw new Error('Task not found')
+
+        const removedTask = group.tasks.splice(taskIdx, 1)
+        await collection.updateOne({ _id: ObjectId(boardId) }, { $set: { groups: board.groups } })
+        return removedTask
+    } catch (err) {
+        logger.error(`cannot remove task from group ${groupId} in board ${boardId}`, err)
+        throw err
+    }
+} 
