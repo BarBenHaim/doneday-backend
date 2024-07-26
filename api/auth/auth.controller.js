@@ -51,11 +51,11 @@ export async function logout(req, res) {
 
 export async function initUserDB(req, res) {
 	try {
-	  const users = readJsonFile('api/data/users.json')
-	  let usersToSignup = [...users]
+	  const user = readJsonFile('api/data/users.json')
+	  let usersToSignup = [...user]
 	  var usersAdded = 0
   
-	  await Promise.all(usersToSignup.map(async (user) => {
+	  await usersToSignup.map((user) => {
 		try {
 		  delete user._id
 		  authService.signup(user)
@@ -63,9 +63,9 @@ export async function initUserDB(req, res) {
 		} catch (err) {
 		  logger.error('Failed to add user', err)
 		}
-	  }))
+	  })
   
-	  res.send(`${usersToSignup} users added to db`)
+	  res.send(`${usersAdded} users added to db`)
 	} catch (err) {
 	  logger.error('Failed to init users DB', err)
 	  res.status(500).send({ err: 'Failed to init DB' })
