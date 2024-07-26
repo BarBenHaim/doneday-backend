@@ -18,6 +18,8 @@
         "cors": "^2.8.5",
         "cryptr": "^6.0.3",
         "express": "^4.17.1",
+        "follow-redirects": "^1.15.6",
+        "fs-extra": "^11.2.0",
         "mongodb": "^6.6.2",
         "socket.io": "^4.2.0"
     },
