@@ -3,7 +3,7 @@ import express from 'express'
 import { requireAuth } from '../../middlewares/requireAuth.middleware.js'
 import { log } from '../../middlewares/logger.middleware.js'
 
-import { getBoards, initDB,  getBoardById, addBoard, updateBoard, removeBoard, addBoardMsg, removeBoardMsg } from './board.controller.js'
+import { getBoards, initDB,  getBoardById, addBoard, updateBoard, removeBoard, addBoardMsg, removeBoardMsg, addTask, updateTask, removeTask } from './board.controller.js'
 
 const router = express.Router()
 
@@ -12,13 +12,17 @@ const router = express.Router()
 
 router.get('/', log, getBoards)
 router.get('/initDB', initDB)
-router.get('/:id', log, getBoardById)
+router.get('/:boardId', log, getBoardById)
 router.post('/', log, addBoard)
-router.put('/:id', updateBoard)
-router.delete('/:id', removeBoard)
+router.put('/:boardId', updateBoard)
+router.delete('/:boardId', removeBoard)
 // router.delete('/:id', requireAuth, requireAdmin, removeBoard)
 
-router.post('/:id/msg', addBoardMsg)
-router.delete('/:id/msg/:msgId', removeBoardMsg)
+router.post('/:boardId/msg', addBoardMsg)
+router.delete('/:boardId/msg/:msgId', removeBoardMsg)
+
+router.post('/:boardid/:groupId/task', log, addTask)
+router.put('/:boardId/:groupId/:taskId', log, updateTask)
+router.delete('/:boardId/:groupId/:taskId',log, removeTask)
 
 export const boardRoutes = router

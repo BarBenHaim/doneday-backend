@@ -206,21 +206,33 @@ async function removeGroup(boardId, groupId) {
     }
 }
 
-async function addTask(boardId, groupId, task) {
+async function addTask(boardId, groupId, task, isBottom=true) {
     try {
+        console.log('service addTask1')
+
         const collection = await dbService.getCollection('board')
         const board = await getById(boardId)
+        console.log('service addTask2')
 
         const group = board.groups.find(group => group._id === groupId)
         if (!group) throw new Error('Group not found')
-
+        
+        console.log('service addTask3')
         const newTask = {
             _id: makeId(),
             ...task
         }
+        console.log('service addTask4')
 
-        group.tasks.push(newTask)
-        await collection.updateOne({ _id: ObjectId(boardId) }, { $set: { groups: board.groups } })
+        if ( isBottom ) {
+            group.tasks.push(newTask)
+        } else {
+            group.tasks.unshift(newTask)
+        }
+
+        console.log('service addTask5')
+        await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { groups: board.groups } })
+        console.log('service addTask6')
         return newTask
     } catch (err) {
         logger.error(`cannot add task to group ${groupId} in board ${boardId}`, err)
@@ -250,17 +262,15 @@ async function updateTask(boardId, groupId, taskId, taskChanges) {
 
 async function removeTask(boardId, groupId, taskId) {
     try {
+
         const collection = await dbService.getCollection('board')
         const board = await getById(boardId)
-
         const group = board.groups.find(group => group._id === groupId)
         if (!group) throw new Error('Group not found')
-
         const taskIdx = group.tasks.findIndex(task => task._id === taskId)
         if (taskIdx === -1) throw new Error('Task not found')
-
         const removedTask = group.tasks.splice(taskIdx, 1)
-        await collection.updateOne({ _id: ObjectId(boardId) }, { $set: { groups: board.groups } })
+        await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { groups: board.groups } })
         return removedTask
     } catch (err) {
         logger.error(`cannot remove task from group ${groupId} in board ${boardId}`, err)

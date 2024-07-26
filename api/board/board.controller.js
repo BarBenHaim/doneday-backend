@@ -23,7 +23,7 @@ export async function getBoards(req, res) {
 
 export async function getBoardById(req, res) {
 	try {
-		const boardId = req.params._id
+		const boardId = req.params.boardId
 		const board = await boardService.getById(boardId)
 		res.json(board)
 	} catch (err) {
@@ -101,7 +101,7 @@ export async function updateBoard(req, res) {
 
 export async function removeBoard(req, res) {
 	try {
-		const boardId = req.params.id
+		const boardId = req.params.boardId
 		const removedId = await boardService.remove(boardId)
 
 		res.send(removedId)
@@ -115,7 +115,7 @@ export async function addBoardMsg(req, res) {
 	// const { loggedinUser } = req
 
 	try {
-		const boardId = req.params.id
+		const boardId = req.params.boardId
 		const msg = {
 			txt: req.body.txt,
 			// by: loggedinUser,
@@ -130,7 +130,7 @@ export async function addBoardMsg(req, res) {
 
 export async function removeBoardMsg(req, res) {
 	try {
-		const boardId = req.params.id
+		const boardId = req.params.boardId
 		const { msgId } = req.params
 
 		const removedId = await boardService.removeBoardMsg(boardId, msgId)
@@ -167,7 +167,7 @@ export async function initDB(req, res) {
 
   export async function addGroup(req, res) {
     try {
-        const boardId = req.params.id
+        const boardId = req.params.boardId
         const { groupTitle } = req.body
         const group = await boardService.addGroup(boardId, groupTitle)
         res.json(group)
