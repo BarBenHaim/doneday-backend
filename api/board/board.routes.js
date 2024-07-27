@@ -10,23 +10,23 @@ const router = express.Router()
 // We can add a middleware for the entire router:
 // router.use(requireAuth)
 
-router.get('/', log, getBoards)
+router.get('/', log, requireAuth, getBoards)
 router.get('/initDB', initDB)
-router.get('/:boardId', log, getBoardById)
-router.post('/', log, addBoard)
-router.put('/:boardId', updateBoard)
-router.delete('/:boardId', removeBoard)
+router.get('/:boardId', log,requireAuth,  getBoardById)
+router.post('/', log, requireAuth, addBoard)
+router.put('/:boardId', log, requireAuth, updateBoard)
+router.delete('/:boardId', log, requireAuth, removeBoard)
 // router.delete('/:id', requireAuth, requireAdmin, removeBoard)
 
 router.post('/:boardId/msg', addBoardMsg)
 router.delete('/:boardId/msg/:msgId', removeBoardMsg)
 
-router.post('/:boardId/group', log, addGroup)
-router.put('/:boardId/:groupId', log, updateGroup)
-router.delete('/:boardId/:groupId',log, removeGroup)
+router.post('/:boardId/group', log, requireAuth, addGroup)
+router.put('/:boardId/:groupId', log, requireAuth, updateGroup)
+router.delete('/:boardId/:groupId',log, requireAuth, removeGroup)
 
-router.post('/:boardid/:groupId/task', log, addTask)
-router.put('/:boardId/:groupId/:taskId', log, updateTask)
-router.delete('/:boardId/:groupId/:taskId',log, removeTask)
+router.post('/:boardid/:groupId/task', log, requireAuth, addTask)
+router.put('/:boardId/:groupId/:taskId', log, requireAuth, updateTask)
+router.delete('/:boardId/:groupId/:taskId',log, requireAuth, removeTask)
 
 export const boardRoutes = router
