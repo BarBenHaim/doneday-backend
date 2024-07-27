@@ -12,7 +12,7 @@ export const boardService = {
     query,
     getById,
     add,
-    update,
+    updateBoard,
     addBoardMsg,
     removeBoardMsg,
     addGroup,
@@ -91,20 +91,25 @@ async function add(board) {
 	}
 }
 
-async function update(board) {
-    const boardToSave = { title: board.title, description: board.description }
-
+async function updateBoard(boardId, updatedBoard) {
     try {
-        const criteria = { _id: ObjectId.createFromHexString(board._id) }
+        const collection = await dbService.getCollection('board')
+        
+        const board = await getById(boardId)
+        if (!board) throw new Error('Board not found')
 
-		const collection = await dbService.getCollection('board')
-		await collection.updateOne(criteria, { $set: boardToSave })
+        const updatedBoardData = { ...board, ...updatedBoard }
 
-		return board
-	} catch (err) {
-		logger.error(`cannot update board ${board._id}`, err)
-		throw err
-	}
+        await collection.updateOne(
+            { _id: ObjectId.createFromHexString(boardId) },
+            { $set: updatedBoardData }
+        )
+
+        return updatedBoardData
+    } catch (err) {
+        logger.error(`cannot update board ${boardId}`, err)
+        throw err
+    }
 }
 
 async function addBoardMsg(boardId, msg) {

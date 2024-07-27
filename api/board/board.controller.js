@@ -90,8 +90,9 @@ export async function updateBoard(req, res) {
     // }
 
 	try {
-		const { body: board } = req
-        const updatedBoard = await boardService.update(board)
+		const boardId = req.params.boardId
+		const boardChanges = req.body
+        const updatedBoard = await boardService.updateBoard(boardId, boardChanges)
         res.json(updatedBoard)
 	} catch (err) {
 		logger.error('Failed to update board', err)
@@ -141,7 +142,6 @@ export async function removeBoardMsg(req, res) {
 	}
 }
 
-
 export async function initDB(req, res) {
 	try {
 	  const board = readJsonFile('api/data/board.json')
@@ -181,13 +181,10 @@ export async function initDB(req, res) {
 
 export async function updateGroup(req, res) {
     try {
-		console.log('updated group controller1')
         const boardId = req.params.boardId
         const groupId = req.params.groupId
         const groupChanges = req.body
-		console.log('updated group controller2')
         const updatedGroup = await boardService.updateGroup(boardId, groupId, groupChanges)
-		console.log('updated group controller3')
         res.json(updatedGroup)
     } catch (err) {
         logger.error('Failed to update group', err)
