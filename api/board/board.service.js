@@ -8,11 +8,11 @@ import { asyncLocalStorage } from '../../services/als.service.js'
 const PAGE_SIZE = 3
 
 export const boardService = {
-	remove,
     query,
     getById,
-    add,
+    addBoard,
     updateBoard,
+    removeBoard,
     addBoardMsg,
     removeBoardMsg,
     addGroup,
@@ -58,20 +58,18 @@ async function getById(boardId) {
 	}
 }
 
-async function remove(boardId) {
+async function removeBoard(boardId) {
     // const { loggedinUser } = asyncLocalStorage.getStore()
     // const { _id: ownerId, isAdmin } = loggedinUser
 
 	try {
-        const criteria = { 
-            _id: ObjectId.createFromHexString(boardId), 
-        }
-        // if(!isAdmin) criteria['owner._id'] = ownerId
-        
-		const collection = await dbService.getCollection('board')
-		const res = await collection.deleteOne(criteria)
+        const collection = await dbService.getCollection('board')
 
-        if(res.deletedCount === 0) throw('Not your board')
+        const deletedBoard = await collection.deleteOne({ _id: ObjectId.createFromHexString(boardId) })
+
+
+        if(deletedBoard.deletedCount === 0) throw('Not your board')
+
 		return boardId
 	} catch (err) {
 		logger.error(`cannot remove board ${boardId}`, err)
@@ -79,7 +77,7 @@ async function remove(boardId) {
 	}
 }
 
-async function add(board) {
+async function addBoard(board) {
 	try {
 		const collection = await dbService.getCollection('board')
 		await collection.insertOne(board)

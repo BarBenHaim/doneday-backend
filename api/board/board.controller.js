@@ -39,7 +39,7 @@ export async function addBoard(req, res) {
 		// board.owner = loggedinUser
 		// logger.debug(req)
         const { body: board } = req
-        const addedBoard = await boardService.add(board)
+        const addedBoard = await boardService.addBoard(board)
         res.json(addedBoard)
 	} catch (err) {
 		logger.error('Failed to add board', err)
@@ -103,9 +103,8 @@ export async function updateBoard(req, res) {
 export async function removeBoard(req, res) {
 	try {
 		const boardId = req.params.boardId
-		const removedId = await boardService.remove(boardId)
-
-		res.send(removedId)
+		const removedBoard = await boardService.removeBoard(boardId)
+		res.send(removedBoard)
 	} catch (err) {
 		logger.error('Failed to remove board', err)
 		res.status(400).send({ err: 'Failed to remove board' })
