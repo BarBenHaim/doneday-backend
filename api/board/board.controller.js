@@ -181,11 +181,14 @@ export async function initDB(req, res) {
 
 export async function updateGroup(req, res) {
     try {
+		console.log('updated group controller1')
         const boardId = req.params.boardId
         const groupId = req.params.groupId
-        const updatedGroup = req.body
-        const group = await boardService.updateGroup(boardId, groupId, updatedGroup)
-        res.json(group)
+        const groupChanges = req.body
+		console.log('updated group controller2')
+        const updatedGroup = await boardService.updateGroup(boardId, groupId, groupChanges)
+		console.log('updated group controller3')
+        res.json(updatedGroup)
     } catch (err) {
         logger.error('Failed to update group', err)
         res.status(400).send({ err: 'Failed to update group' })
