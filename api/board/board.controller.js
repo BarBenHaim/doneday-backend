@@ -150,7 +150,7 @@ export async function initDB(req, res) {
 	  await boardsToAdd.map((board) => {
 		try {
 		  delete board._id
-		  boardService.add(board)
+		  boardService.addBoard(board)
 		  boardsAdded += 1
 		} catch (err) {
 		  logger.error('Failed to add board', err)

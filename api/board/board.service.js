@@ -265,16 +265,16 @@ async function removeTask(boardId, groupId, taskId) {
 } 
 
 
-// function _buildCriteria(filterBy) {
-//     const criteria = {
-//         title: { $regex: filterBy.txt, $options: 'i' },
-//         description: { $regex: filterBy.txt, $options: 'i' },
-//     }
+function _buildCriteria(filterBy) {
+    const criteria = {
+        title: { $regex: filterBy.txt, $options: 'i' },
+        description: { $regex: filterBy.txt, $options: 'i' },
+    }
 
-//     return criteria
-// }
+    return criteria
+}
 
-// function _buildSort(filterBy) {
-//     if(!filterBy.sortField) return {}
-//     return { [filterBy.sortField]: filterBy.sortDir }
-// }
+function _buildSort(filterBy) {
+    if(!filterBy.sortField) return {}
+    return { [filterBy.sortField]: filterBy.sortDir }
+}
