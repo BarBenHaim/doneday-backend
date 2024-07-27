@@ -27,19 +27,14 @@ export async function getBoardById(req, res) {
 
 export async function addBoard(req, res) {
 	const { loggedinUser, body: board } = req
-    console.log("addBoard controller1", board)
 
 
 	try {
-        console.log("addBoard controller1")
 
 		board.createdBy = loggedinUser
-        console.log("addBoard controller2")
 
 		logger.debug(board)
-        console.log("addBoard controller3")
         const addedBoard = await boardService.addBoard(board)
-        console.log("addBoard controller4")
         res.json(addedBoard)
 	} catch (err) {
 		logger.error('Failed to add board', err)
