@@ -6,13 +6,6 @@ import { boardService as boardService } from './board.service.js'
 
 export async function getBoards(req, res) {
     try {
-		// const filterBy = {
-		// 	txt: req.query.txt || '',
-		// 	minSpeed: +req.query.minSpeed || 0,
-        //     sortField: req.query.sortField || '',
-        //     sortDir: req.query.sortDir || 1,
-		// 	pageIdx: req.query.pageIdx,
-		// }
         const boards = await boardService.query()
         res.json(boards)
     } catch (err) {
@@ -33,52 +26,26 @@ export async function getBoardById(req, res) {
 }
 
 export async function addBoard(req, res) {
-	// const { loggedinUser, body: board } = req
+	const { loggedinUser, body: board } = req
+    console.log("addBoard controller1", board)
+
 
 	try {
-		// board.owner = loggedinUser
-		// logger.debug(req)
-        const { body: board } = req
+        console.log("addBoard controller1")
+
+		board.createdBy = loggedinUser
+        console.log("addBoard controller2")
+
+		logger.debug(board)
+        console.log("addBoard controller3")
         const addedBoard = await boardService.addBoard(board)
+        console.log("addBoard controller4")
         res.json(addedBoard)
 	} catch (err) {
 		logger.error('Failed to add board', err)
 		res.status(400).send({ err: 'Failed to add board' })
 	}
 }
-
-// export async function addBoard(req, res) {
-//     try {
-//         const board = {
-//             ...req.body,
-//             groups: req.body.groups.map(group => ({
-//                 ...group,
-//                 _id: new mongoose.Types.ObjectId(),
-//                 tasks: group.tasks.map(task => ({
-//                     ...task,
-//                     _id: new mongoose.Types.ObjectId(),
-//                     comments: task.comments.map(comment => ({
-//                         ...comment,
-//                         _id: new mongoose.Types.ObjectId(),
-//                     })),
-//                     checklists: task.checklists.map(checklist => ({
-//                         ...checklist,
-//                         _id: new mongoose.Types.ObjectId(),
-//                         todos: checklist.todos.map(todo => ({
-//                             ...todo,
-//                             _id: new mongoose.Types.ObjectId(),
-//                         })),
-//                     })),
-//                 })),
-//             })),
-//         }
-//         const addedBoard = await boardService.add(board)
-//         res.json(addedBoard)
-//     } catch (err) {
-//         logger.error('Failed to add board', err)
-//         res.status(400).send({ err: 'Failed to add board' })
-//     }
-// }
 
 export async function updateBoard(req, res) {
 	// const { loggedinUser, body: board } = req

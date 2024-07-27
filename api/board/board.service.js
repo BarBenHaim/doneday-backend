@@ -23,6 +23,7 @@ export const boardService = {
     removeTask,
 }
 
+
 async function query(filterBy = { txt: '' }) {
 	try {
         const criteria = _buildCriteria(filterBy)
@@ -80,9 +81,15 @@ async function removeBoard(boardId) {
 async function addBoard(board) {
 	try {
 		const collection = await dbService.getCollection('board')
-		await collection.insertOne(board)
 
-		return board
+        const newBoardTemplate = _getEmptyBoard(board.title, board.label, board.createdBy)
+        const newBoard = {
+            ...newBoardTemplate,
+            ...board
+        };
+        console.log("addBoardService", newBoard)
+		await collection.insertOne(newBoard)
+		return newBoard
 	} catch (err) {
 		logger.error('cannot insert board', err)
 		throw err
@@ -147,9 +154,10 @@ async function addGroup(boardId, group) {
         if (!group.title) {
             throw new Error('Group must have a title')
         }
-
+        const newGroupTemplate = _getEmptyGroup()
         const newGroup = {
             _id:makeId(),
+            ...newGroupTemplate,
             ...group
         }
 
@@ -197,21 +205,20 @@ async function removeGroup(boardId, groupId) {
     }
 }
 
-async function addTask(boardId, groupId, task, isBottom=true) {
+async function addTask(boardId, groupId, task) {
     try {
         const collection = await dbService.getCollection('board')
         const board = await getById(boardId)
         const group = board.groups.find(group => group._id === groupId)
         if (!group) throw new Error('Group not found')
+        const newTaskTemplate = _getEmptyTask()
         const newTask = {
             _id: makeId(),
+            ...newTaskTemplate,
             ...task
         }
-        if ( isBottom ) {
             group.tasks.push(newTask)
-        } else {
-            group.tasks.unshift(newTask)
-        }
+
         await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { groups: board.groups } })
         return newTask
     } catch (err) {
@@ -271,4 +278,76 @@ function _buildCriteria(filterBy) {
 function _buildSort(filterBy) {
     if(!filterBy.sortField) return {}
     return { [filterBy.sortField]: filterBy.sortDir }
+}
+
+
+function _getEmptyBoard(boardTitle, boardLabel, createdBy) {
+    const task1 = _createTask(boardLabel + ' 1')
+    const task2 = _createTask(boardLabel + ' 2' )
+    const task3 = _createTask(boardLabel + ' 3' )
+    const task4 = _createTask(boardLabel + ' 4' )
+    const task5 = _createTask(boardLabel + ' 5' )
+
+    return {
+        title:boardTitle,
+        description:'Manage any type of project. Assign owners, set timelines and keep track of where your project stands.',
+        isStarred: false,
+        archivedAt: null,
+        createdBy,
+        label:boardLabel,
+        members: [],
+        groups: [_getEmptyGroup('Group Title', [task1, task2, task3]), _getEmptyGroup('Group Title', [task4, task5])],
+        activities: [],
+        cmpsOrder: [
+            "checkbox",
+            "title",
+            "description",
+            "priority",
+            "dueDate",
+            "memberIds",
+            "status",
+            "files"
+        ]
+    }
+}
+
+function _getEmptyGroup(title, tasks = []) {
+    return {
+        _id: makeId(),
+        title,
+        archivedAt: null,
+        style: {},
+        tasks
+    };
+}
+
+function _getEmptyTask(title = 'New Task') {
+    return {
+        _id: makeId(),
+        title,
+        description: '',
+        status: 'Not Started',
+        priority: 'Low',
+        dueDate: null,
+        members: [],
+        labels: [],
+        comments: [],
+    }
+}
+
+export function _createTask(title, options = {}) {
+    return {
+        _id: makeId(),
+        title,
+        archivedAt: options.archivedAt || null,
+        status: options.status || 'Not Started',
+        priority: options.priority ||'low',
+        dueDate: options.dueDate || null,
+        description: options.description || null,
+        comments: options.comments || [],
+        checklists: options.checklists || [],
+        memberIds: options.memberIds || [],
+        byMember: options.byMember || null,
+        style: options.style || {},
+    }
 }
