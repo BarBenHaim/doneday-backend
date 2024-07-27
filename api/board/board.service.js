@@ -141,10 +141,8 @@ async function removeBoardMsg(boardId, msgId) {
 
 async function addGroup(boardId, group) {
     try {
-        console.log('addGroup service')
         const collection = await dbService.getCollection('board')
         const board = await getById(boardId)
-        console.log('addGroup service1')
 
         if (!group.title) {
             throw new Error('Group must have a title')
@@ -154,14 +152,10 @@ async function addGroup(boardId, group) {
             _id:makeId(),
             ...group
         }
-        console.log('addGroup service2')
 
         board.groups.push(newGroup)
-        console.log('addGroup service3')
 
         await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { groups: board.groups } })
-        console.log('addGroup service4')
-
         return newGroup
     } catch (err) {
         logger.error(`cannot add group to board ${boardId}`, err)

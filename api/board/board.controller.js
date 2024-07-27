@@ -166,11 +166,9 @@ export async function initDB(req, res) {
 
   export async function addGroup(req, res) {
     try {
-        console.log('addgroup controller1')
         const boardId = req.params.boardId
         const group = req.body  // Receive the whole body
         const newGroup = await boardService.addGroup(boardId, group)
-        console.log('addgroup controller2', newGroup)
         res.json(newGroup)  // Return the entire newGroup object
     } catch (err) {
         logger.error('Failed to add group', err)
