@@ -11,10 +11,13 @@ export const userService = {
 	getByEmail, // Used for Login
 }
 
+const USER_COLLECTION_NAME = 'user'
+
+
 async function query(filterBy = {}) {
     const criteria = _buildCriteria(filterBy)
     try {
-        const collection = await dbService.getCollection('user')
+        const collection = await dbService.getCollection(USER_COLLECTION_NAME)
         var users = await collection.find(criteria).toArray()
         users = users.map(user => {
             delete user.password
@@ -34,7 +37,7 @@ async function getById(userId) {
     try {
         var criteria = { _id: ObjectId.createFromHexString(userId) }
 
-        const collection = await dbService.getCollection('user')
+        const collection = await dbService.getCollection(USER_COLLECTION_NAME)
         const user = await collection.findOne(criteria)
         delete user.password
 
@@ -55,7 +58,7 @@ async function getById(userId) {
 
 async function getByEmail(email) {
 	try {
-		const collection = await dbService.getCollection('user')
+		const collection = await dbService.getCollection(USER_COLLECTION_NAME)
 		const user = await collection.findOne({ email })
 		return user
 	} catch (err) {
@@ -68,7 +71,7 @@ async function remove(userId) {
     try {
         const criteria = { _id: ObjectId.createFromHexString(userId) }
 
-        const collection = await dbService.getCollection('user')
+        const collection = await dbService.getCollection(USER_COLLECTION_NAME)
         await collection.deleteOne(criteria)
     } catch (err) {
         logger.error(`cannot remove user ${userId}`, err)
@@ -84,7 +87,7 @@ async function update(user) {
             fullname: user.fullname,
             score: user.score,
         }
-        const collection = await dbService.getCollection('user')
+        const collection = await dbService.getCollection(USER_COLLECTION_NAME)
         await collection.updateOne({ _id: userToSave._id }, { $set: userToSave })
         return userToSave
     } catch (err) {
@@ -103,7 +106,7 @@ async function add(user) {
 			imgUrl: user.imgUrl,
 			isAdmin: user.isAdmin,
 		}
-		const collection = await dbService.getCollection('user')
+		const collection = await dbService.getCollection(USER_COLLECTION_NAME)
 		await collection.insertOne(userToAdd)
 		return userToAdd
 	} catch (err) {
@@ -113,6 +116,7 @@ async function add(user) {
 }
 
 function _buildCriteria(filterBy) {
+
 	const criteria = {}
 	if (filterBy.txt) {
 		const txtCriteria = { $regex: filterBy.txt, $options: 'i' }
@@ -125,8 +129,8 @@ function _buildCriteria(filterBy) {
 			},
 		]
 	}
-	if (filterBy.minBalance) {
-		criteria.score = { $gte: filterBy.minBalance }
-	}
+	// if (filterBy.minBalance) {
+	// 	criteria.score = { $gte: filterBy.minBalance }
+	// }
 	return criteria
 }

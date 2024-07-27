@@ -3,14 +3,16 @@ import { logger } from '../../services/logger.service.js'
 import { readJsonFile } from '../../services/util.service.js'
 
 export async function login(req, res) {
-	const { username, password } = req.body
+
 	try {
-		const user = await authService.login(username, password)
-		const loginToken = authService.getLoginToken(user)
-        
-		logger.info('User login: ', user)
-        
-		res.cookie('loginToken', loginToken, { sameSite: 'None', secure: true })
+		const credentials = req.body
+
+		if (!('email' in credentials ) || !('password' in credentials)) {
+			return Promise.reject('No email or password in credentials')
+		}
+		const user = await authService.login(credentials.email, credentials.password)
+		const loginToken = authService.getLoginToken(user)        
+		res.cookie('loginToken', loginToken, { sameSite: 'None', secure: false })
 		res.json(user)
 	} catch (err) {
 		logger.error('Failed to Login ' + err)
@@ -23,14 +25,12 @@ export async function signup(req, res) {
 		const credentials = req.body
 
 		// Never log passwords
-		// logger.debug(credentials)
-		
         const account = await authService.signup(credentials)
 		logger.debug(`auth.route - new account created: ` + JSON.stringify(account))
 		
-        const user = await authService.login(credentials.username, credentials.password)
+        const user = await authService.login(credentials.email, credentials.password)
 		logger.info('User signup:', user)
-		
+	
         const loginToken = authService.getLoginToken(user)
 		res.cookie('loginToken', loginToken, { sameSite: 'None', secure: true })
 		res.json(user)
