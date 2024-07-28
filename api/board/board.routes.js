@@ -3,7 +3,7 @@ import express from 'express'
 import { requireAuth } from '../../middlewares/requireAuth.middleware.js'
 import { log } from '../../middlewares/logger.middleware.js'
 
-import { getBoards, initDB,  getBoardById, addBoard, updateBoard, removeBoard, addBoardMsg, removeBoardMsg, addGroup, updateGroup, removeGroup, addTask, updateTask, removeTask } from './board.controller.js'
+import { getBoards, initDB,  getBoardById, addBoard, updateBoard, removeBoard, addBoardMsg, removeBoardMsg, addGroup, updateGroup, removeGroup, addTask, updateTask, removeTask, addComment, deleteComment, getComments, updateComment } from './board.controller.js'
 
 const router = express.Router()
 
@@ -28,5 +28,10 @@ router.delete('/:boardId/:groupId',log, requireAuth, removeGroup)
 router.post('/:boardId/:groupId/task', log, requireAuth, addTask)
 router.put('/:boardId/:groupId/:taskId', log, requireAuth, updateTask)
 router.delete('/:boardId/:groupId/:taskId',log, requireAuth, removeTask)
+
+router.post('/:boardId/:groupId/:taskId/comments',log, requireAuth, addComment);
+router.put('/:boardId/:groupId/:taskId/comments/:commentId',log, requireAuth, updateComment);
+router.delete('/:boardId/:groupId/:taskId/comments/:commentId',log, requireAuth, deleteComment);
+router.get('/:boardId/:groupId/:taskId/comments',log, requireAuth, getComments);
 
 export const boardRoutes = router

@@ -5,7 +5,7 @@ import { makeId } from '../../services/util.service.js'
 import { dbService } from '../../services/db.service.js'
 import { asyncLocalStorage } from '../../services/als.service.js'
 
-const PAGE_SIZE = 3
+const BOARD_COLLECTION_NAME = 'board'
 
 export const boardService = {
     query,
@@ -13,23 +13,24 @@ export const boardService = {
     addBoard,
     updateBoard,
     removeBoard,
-    addBoardMsg,
-    removeBoardMsg,
     addGroup,
     updateGroup,
     removeGroup,
     addTask,
     updateTask,
     removeTask,
+    getComments,
+    addComment,
+    updateComment,
+    deleteComment,
 }
-
 
 async function query(filterBy = { txt: '' }) {
     try {
         const criteria = _buildCriteria(filterBy)
         const sort = _buildSort(filterBy)
 
-        const collection = await dbService.getCollection('board')
+        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
         var boardCursor = await collection.find(criteria, { sort })
 
         if (filterBy.pageIdx !== undefined) {
@@ -48,7 +49,7 @@ async function getById(boardId) {
     try {
         const criteria = { _id: ObjectId.createFromHexString(boardId) }
 
-        const collection = await dbService.getCollection('board')
+        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
         const board = await collection.findOne(criteria)
 
         board.createdAt = board._id.getTimestamp()
@@ -64,7 +65,7 @@ async function removeBoard(boardId) {
     // const { _id: ownerId, isAdmin } = loggedinUser
 
     try {
-        const collection = await dbService.getCollection('board')
+        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
 
         const deletedBoard = await collection.deleteOne({ _id: ObjectId.createFromHexString(boardId) })
 
@@ -79,7 +80,7 @@ async function removeBoard(boardId) {
 
 async function addBoard(board) {
     try {
-        const collection = await dbService.getCollection('board')
+        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
 
         const newBoardTemplate = _getEmptyBoard(board.title, board.label, board.createdBy)
         const newBoard = {
@@ -97,12 +98,12 @@ async function addBoard(board) {
 
 async function updateBoard(board) {
     try {
-        const {_id,  ...boardToUpdate } = board
+        const { _id, ...boardToUpdate } = board
 
-        const collection = await dbService.getCollection('board')
+        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
 
         await collection.updateOne({ _id: ObjectId.createFromHexString(board._id) }, { $set: boardToUpdate })
-        console.log("updateBoard backend service3")
+        console.log('updateBoard backend service3')
 
         return board
     } catch (err) {
@@ -111,38 +112,9 @@ async function updateBoard(board) {
     }
 }
 
-async function addBoardMsg(boardId, msg) {
-    try {
-        const criteria = { _id: ObjectId.createFromHexString(boardId) }
-        msg.id = makeId()
-
-        const collection = await dbService.getCollection('board')
-        await collection.updateOne(criteria, { $push: { msgs: msg } })
-
-        return msg
-    } catch (err) {
-        logger.error(`cannot add board msg ${boardId}`, err)
-        throw err
-    }
-}
-
-async function removeBoardMsg(boardId, msgId) {
-    try {
-        const criteria = { _id: ObjectId.createFromHexString(boardId) }
-
-        const collection = await dbService.getCollection('board')
-        await collection.updateOne(criteria, { $pull: { msgs: { id: msgId } } })
-
-        return msgId
-    } catch (err) {
-        logger.error(`cannot add board msg ${boardId}`, err)
-        throw err
-    }
-}
-
 async function addGroup(boardId, group) {
     try {
-        const collection = await dbService.getCollection('board')
+        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
         const board = await getById(boardId)
 
         if (!group.title) {
@@ -167,7 +139,7 @@ async function addGroup(boardId, group) {
 
 async function updateGroup(boardId, groupId, updatedGroup) {
     try {
-        const collection = await dbService.getCollection('board')
+        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
         const board = await getById(boardId)
 
         const groupIdx = board.groups.findIndex((group) => group._id === groupId)
@@ -184,7 +156,7 @@ async function updateGroup(boardId, groupId, updatedGroup) {
 
 async function removeGroup(boardId, groupId) {
     try {
-        const collection = await dbService.getCollection('board')
+        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
         const board = await getById(boardId)
 
         const groupIdx = board.groups.findIndex((group) => group._id === groupId)
@@ -201,7 +173,7 @@ async function removeGroup(boardId, groupId) {
 
 async function addTask(boardId, groupId, task) {
     try {
-        const collection = await dbService.getCollection('board')
+        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
         const board = await getById(boardId)
         const group = board.groups.find((group) => group._id === groupId)
         if (!group) throw new Error('Group not found')
@@ -223,7 +195,7 @@ async function addTask(boardId, groupId, task) {
 
 async function updateTask(boardId, groupId, taskId, taskChanges) {
     try {
-        const collection = await dbService.getCollection('board')
+        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
         const board = await getById(boardId)
 
         const group = board.groups.find((group) => group._id === groupId)
@@ -243,7 +215,7 @@ async function updateTask(boardId, groupId, taskId, taskChanges) {
 
 async function removeTask(boardId, groupId, taskId) {
     try {
-        const collection = await dbService.getCollection('board')
+        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
         const board = await getById(boardId)
         const group = board.groups.find((group) => group._id === groupId)
         if (!group) throw new Error('Group not found')
@@ -257,6 +229,213 @@ async function removeTask(boardId, groupId, taskId) {
         throw err
     }
 }
+
+async function getComments(boardId, groupId, taskId) {
+    try {
+        const board = await getById(boardId);
+
+        let item;
+        if (taskId) {
+            const group = board.groups.find((group) => group._id === groupId);
+            if (!group) throw new Error('Group not found');
+            item = group.tasks.find((task) => task._id === taskId);
+        } else if (groupId) {
+            item = board.groups.find((group) => group._id === groupId);
+        } else {
+            item = board;
+        }
+
+        if (!item) throw new Error('Item not found');
+        return item.comments || [];
+    } catch (err) {
+        logger.error(`Cannot get comments for item in board ${boardId}`, err);
+        throw err;
+    }
+}
+
+async function addComment(boardId, groupId, taskId, comment, user) {
+
+    try {
+
+        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME);
+        const board = await getById(boardId);
+
+
+        let item;
+        if (taskId) {
+
+            const group = board.groups.find((group) => group._id === groupId);
+            if (!group) throw new Error('Group not found');
+            item = group.tasks.find((task) => task._id === taskId);
+        } else if (groupId) {
+            item = board.groups.find((group) => group._id === groupId);
+        } else {
+            item = board;
+        }
+
+        if (!item) throw new Error('Item not found');
+        if (!item.comments) item.comments = [];
+        const newComment = {
+            _id: makeId(),
+            title: comment.txt,
+            createdAt: Date.now(),
+            byMember: {
+                _id: comment.byMember._id,
+                fullname: comment.byMember.fullname,
+                imgUrl: comment.byMember.imgUrl
+            }
+        };
+
+        item.comments.push(newComment);
+
+        await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { groups: board.groups } });
+
+        return newComment;
+    } catch (err) {
+        logger.error(`Cannot add comment to item in board ${board._id}`, err);
+        throw err;
+    }
+}
+
+async function deleteComment(boardId, groupId, taskId, commentId, userId) {
+    try {
+        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME);
+        const board = await getById(boardId);
+
+        let item;
+        if (taskId) {
+            const group = board.groups.find((group) => group._id === groupId);
+            if (!group) throw new Error('Group not found');
+            item = group.tasks.find((task) => task._id === taskId);
+        } else if (groupId) {
+            item = board.groups.find((group) => group._id === groupId);
+        } else {
+            item = board;
+        }
+
+        if (!item) throw new Error('Item not found');
+        const commentIdx = item.comments.findIndex((comment) => comment._id === commentId);
+        if (commentIdx === -1) throw new Error('Comment not found');
+        if (item.comments[commentIdx].byMember._id !== userId) throw new Error('Not authorized to delete this comment')
+
+        item.comments.splice(commentIdx, 1);
+        await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { groups: board.groups } });
+        return commentId;
+    } catch (err) {
+        logger.error(`Cannot delete comment from item in board ${boardId}`, err);
+        throw err;
+    }
+}
+
+async function updateComment(boardId, groupId, taskId, commentId, updatedComment,  userId) {
+    try {
+        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME);
+        const board = await getById(boardId);
+
+        let item;
+        if (taskId) {
+            const group = board.groups.find((group) => group._id === groupId);
+            if (!group) throw new Error('Group not found');
+            item = group.tasks.find((task) => task._id === taskId);
+        } else if (groupId) {
+            item = board.groups.find((group) => group._id === groupId);
+        } else {
+            item = board;
+        }
+
+        if (!item) throw new Error('Item not found');
+        const commentIdx = item.comments.findIndex((comment) => comment._id === commentId);
+        if (commentIdx === -1) throw new Error('Comment not found');
+        if (item.comments[commentIdx].byMember._id !== userId) throw new Error('Not authorized to update this comment');
+
+        item.comments[commentIdx] = { ...item.comments[commentIdx], ...updatedComment };
+
+        await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { groups: board.groups } });
+        return item.comments[commentIdx];
+    } catch (err) {
+        logger.error(`Cannot update comment ${commentId} in item in board ${boardId}`, err);
+        throw err;
+    }
+}
+// async function addTaskComment(boardId, groupId, taskId, comment) {
+//     try {
+//         const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
+//         const board = await getById(boardId)
+
+//         const group = board.groups.find((group) => group._id === groupId)
+//         if (!group) throw new Error('Group not found')
+
+//         const taskIdx = group.tasks.findIndex((task) => task._id === taskId)
+//         if (taskIdx === -1) throw new Error('Task not found')
+
+//         if (!task.comments) task.comments = []
+//         msg.id = makeId()
+//         task.comments.push(comment)
+
+//         const criteria = { _id: ObjectId.createFromHexString(boardId) }
+//         await collection.updateOne(criteria, { $set: { groups: board.groups } })
+
+//         return msg
+//     } catch (err) {
+//         logger.error(`cannot add board msg ${boardId}`, err)
+//         throw err
+//     }
+// }
+
+// async function removeTaskComment(boardId, groupId, taskId, commentId) {
+//     try {
+//         const collection = await dbService.getCollection(BOARD_COLLECTION_NAME);
+//         const board = await getById(boardId);
+
+//         const group = board.groups.find((group) => group._id === groupId);
+//         if (!group) throw new Error('Group not found');
+
+//         const task = group.tasks.find((task) => task._id === taskId);
+//         if (!task) throw new Error('Task not found');
+
+//         const commentIdx = task.comments.findIndex((comment) => comment.id === commentId);
+//         if (commentIdx === -1) throw new Error('Comment not found');
+
+//         task.comments.splice(commentIdx, 1);
+
+//         const criteria = { _id: ObjectId.createFromHexString(boardId) };
+//         await collection.updateOne(criteria, { $set: { groups: board.groups } });
+
+//         return commentId;
+//     } catch (err) {
+//         logger.error(`cannot remove comment ${commentId} from task ${taskId} in group ${groupId} on board ${boardId}`, err);
+//         throw err;
+//     }
+// }
+
+// async function addBoardMsg(boardId, msg) {
+//     try {
+//         const criteria = { _id: ObjectId.createFromHexString(boardId) }
+//         msg.id = makeId()
+
+//         const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
+//         await collection.updateOne(criteria, { $push: { msgs: msg } })
+
+//         return msg
+//     } catch (err) {
+//         logger.error(`cannot add board msg ${boardId}`, err)
+//         throw err
+//     }
+// }
+
+// async function removeBoardMsg(boardId, msgId) {
+//     try {
+//         const criteria = { _id: ObjectId.createFromHexString(boardId) }
+
+//         const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
+//         await collection.updateOne(criteria, { $pull: { msgs: { id: msgId } } })
+
+//         return msgId
+//     } catch (err) {
+//         logger.error(`cannot add board msg ${boardId}`, err)
+//         throw err
+//     }
+// }
 
 function _buildCriteria(filterBy) {
     const criteria = {
@@ -297,17 +476,18 @@ function _getEmptyBoard(boardTitle, boardLabel, createdBy) {
     }
 }
 
-function _getEmptyGroup(title, style = {}, tasks = []) {
+function _getEmptyGroup(title, style = {}, tasks = [], createdBy = []) {
     return {
         _id: makeId(),
         title,
         archivedAt: null,
         style,
         tasks,
+        createdBy,
     }
 }
 
-function _getEmptyTask(title = 'New Task') {
+function _getEmptyTask(title = 'New Task', createdBy = []) {
     return {
         _id: makeId(),
         title,
@@ -318,6 +498,7 @@ function _getEmptyTask(title = 'New Task') {
         members: [],
         labels: [],
         comments: [],
+        createdBy,
     }
 }
 
