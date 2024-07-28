@@ -32,7 +32,7 @@ export async function addBoard(req, res) {
 	try {
 
 		board.createdBy = loggedinUser
-
+        // loggedinUser?.activites.push(getUserActivity(loggedinUser.username,'Added a board')) 
 		logger.debug(board)
         const addedBoard = await boardService.addBoard(board)
         res.json(addedBoard)
@@ -41,6 +41,11 @@ export async function addBoard(req, res) {
 		res.status(400).send({ err: 'Failed to add board' })
 	}
 }
+
+// function getUserActivity(username,activity){
+// return `${username} has ${activity} ` + Date.now()
+
+// }
 
 export async function updateBoard(req, res) {
 	// const { loggedinUser, body: board } = req
@@ -52,9 +57,9 @@ export async function updateBoard(req, res) {
     // }
 
 	try {
-		const boardId = req.params.boardId
-		const boardChanges = req.body
-        const updatedBoard = await boardService.updateBoard(boardId, boardChanges)
+		// const boardId = req.params.boardId
+		const board = req.body
+        const updatedBoard = await boardService.updateBoard(board)
         res.json(updatedBoard)
 	} catch (err) {
 		logger.error('Failed to update board', err)

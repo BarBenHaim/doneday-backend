@@ -25,125 +25,119 @@ export const boardService = {
 
 
 async function query(filterBy = { txt: '' }) {
-	try {
+    try {
         const criteria = _buildCriteria(filterBy)
         const sort = _buildSort(filterBy)
 
-		const collection = await dbService.getCollection('board')
-		var boardCursor = await collection.find(criteria, { sort })
+        const collection = await dbService.getCollection('board')
+        var boardCursor = await collection.find(criteria, { sort })
 
-		if (filterBy.pageIdx !== undefined) {
-			boardCursor.skip(filterBy.pageIdx * PAGE_SIZE).limit(PAGE_SIZE)
-		}
+        if (filterBy.pageIdx !== undefined) {
+            boardCursor.skip(filterBy.pageIdx * PAGE_SIZE).limit(PAGE_SIZE)
+        }
 
-		const boards = boardCursor.toArray()
-		return boards
-	} catch (err) {
-		logger.error('cannot find boards', err)
-		throw err
-	}
+        const boards = boardCursor.toArray()
+        return boards
+    } catch (err) {
+        logger.error('cannot find boards', err)
+        throw err
+    }
 }
 
 async function getById(boardId) {
-	try {
+    try {
         const criteria = { _id: ObjectId.createFromHexString(boardId) }
 
-		const collection = await dbService.getCollection('board')
-		const board = await collection.findOne(criteria)
-        
-		board.createdAt = board._id.getTimestamp()
-		return board
-	} catch (err) {
-		logger.error(`while finding board ${boardId}`, err)
-		throw err
-	}
+        const collection = await dbService.getCollection('board')
+        const board = await collection.findOne(criteria)
+
+        board.createdAt = board._id.getTimestamp()
+        return board
+    } catch (err) {
+        logger.error(`while finding board ${boardId}`, err)
+        throw err
+    }
 }
 
 async function removeBoard(boardId) {
     // const { loggedinUser } = asyncLocalStorage.getStore()
     // const { _id: ownerId, isAdmin } = loggedinUser
 
-	try {
+    try {
         const collection = await dbService.getCollection('board')
 
         const deletedBoard = await collection.deleteOne({ _id: ObjectId.createFromHexString(boardId) })
 
+        if (!deletedBoard.deletedCount) throw 'Not your board'
 
-        if(deletedBoard.deletedCount === 0) throw('Not your board')
-
-		return boardId
-	} catch (err) {
-		logger.error(`cannot remove board ${boardId}`, err)
-		throw err
-	}
+        return boardId
+    } catch (err) {
+        logger.error(`cannot remove board ${boardId}`, err)
+        throw err
+    }
 }
 
 async function addBoard(board) {
-	try {
-		const collection = await dbService.getCollection('board')
+    try {
+        const collection = await dbService.getCollection('board')
 
         const newBoardTemplate = _getEmptyBoard(board.title, board.label, board.createdBy)
         const newBoard = {
             ...newBoardTemplate,
-            ...board
-        };
-        console.log("addBoardService", newBoard)
-		await collection.insertOne(newBoard)
-		return newBoard
-	} catch (err) {
-		logger.error('cannot insert board', err)
-		throw err
-	}
+            ...board,
+        }
+        console.log('addBoardService', newBoard)
+        await collection.insertOne(newBoard)
+        return newBoard
+    } catch (err) {
+        logger.error('cannot insert board', err)
+        throw err
+    }
 }
 
-async function updateBoard(boardId, updatedBoard) {
+async function updateBoard(board) {
     try {
+        const {_id,  ...boardToUpdate } = board
+
         const collection = await dbService.getCollection('board')
-        
-        const board = await getById(boardId)
-        if (!board) throw new Error('Board not found')
 
-        const updatedBoardData = { ...board, ...updatedBoard }
+        await collection.updateOne({ _id: ObjectId.createFromHexString(board._id) }, { $set: boardToUpdate })
+        console.log("updateBoard backend service3")
 
-        await collection.updateOne(
-            { _id: ObjectId.createFromHexString(boardId) },
-            { $set: updatedBoardData }
-        )
-
-        return updatedBoardData
+        return board
     } catch (err) {
-        logger.error(`cannot update board ${boardId}`, err)
+        logger.error(`cannot update board ${board._id}`, err)
         throw err
     }
 }
 
 async function addBoardMsg(boardId, msg) {
-	try {
+    try {
         const criteria = { _id: ObjectId.createFromHexString(boardId) }
         msg.id = makeId()
-        
-		const collection = await dbService.getCollection('board')
-		await collection.updateOne(criteria, { $push: { msgs: msg } })
 
-		return msg
-	} catch (err) {
-		logger.error(`cannot add board msg ${boardId}`, err)
-		throw err
-	}
+        const collection = await dbService.getCollection('board')
+        await collection.updateOne(criteria, { $push: { msgs: msg } })
+
+        return msg
+    } catch (err) {
+        logger.error(`cannot add board msg ${boardId}`, err)
+        throw err
+    }
 }
 
 async function removeBoardMsg(boardId, msgId) {
-	try {
+    try {
         const criteria = { _id: ObjectId.createFromHexString(boardId) }
 
-		const collection = await dbService.getCollection('board')
-		await collection.updateOne(criteria, { $pull: { msgs: { id: msgId }}})
-        
-		return msgId
-	} catch (err) {
-		logger.error(`cannot add board msg ${boardId}`, err)
-		throw err
-	}
+        const collection = await dbService.getCollection('board')
+        await collection.updateOne(criteria, { $pull: { msgs: { id: msgId } } })
+
+        return msgId
+    } catch (err) {
+        logger.error(`cannot add board msg ${boardId}`, err)
+        throw err
+    }
 }
 
 async function addGroup(boardId, group) {
@@ -156,9 +150,9 @@ async function addGroup(boardId, group) {
         }
         const newGroupTemplate = _getEmptyGroup()
         const newGroup = {
-            _id:makeId(),
+            _id: makeId(),
             ...newGroupTemplate,
-            ...group
+            ...group,
         }
 
         board.groups.push(newGroup)
@@ -175,8 +169,8 @@ async function updateGroup(boardId, groupId, updatedGroup) {
     try {
         const collection = await dbService.getCollection('board')
         const board = await getById(boardId)
-        
-        const groupIdx = board.groups.findIndex(group => group._id === groupId)
+
+        const groupIdx = board.groups.findIndex((group) => group._id === groupId)
         if (groupIdx === -1) throw new Error('Group not found')
 
         board.groups[groupIdx] = { ...board.groups[groupIdx], ...updatedGroup }
@@ -192,8 +186,8 @@ async function removeGroup(boardId, groupId) {
     try {
         const collection = await dbService.getCollection('board')
         const board = await getById(boardId)
-        
-        const groupIdx = board.groups.findIndex(group => group._id === groupId)
+
+        const groupIdx = board.groups.findIndex((group) => group._id === groupId)
         if (groupIdx === -1) throw new Error('Group not found')
 
         const removedGroup = board.groups.splice(groupIdx, 1)
@@ -209,15 +203,15 @@ async function addTask(boardId, groupId, task) {
     try {
         const collection = await dbService.getCollection('board')
         const board = await getById(boardId)
-        const group = board.groups.find(group => group._id === groupId)
+        const group = board.groups.find((group) => group._id === groupId)
         if (!group) throw new Error('Group not found')
         const newTaskTemplate = _getEmptyTask()
         const newTask = {
             _id: makeId(),
             ...newTaskTemplate,
-            ...task
+            ...task,
         }
-            group.tasks.push(newTask)
+        group.tasks.push(newTask)
 
         await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { groups: board.groups } })
         return newTask
@@ -232,10 +226,10 @@ async function updateTask(boardId, groupId, taskId, taskChanges) {
         const collection = await dbService.getCollection('board')
         const board = await getById(boardId)
 
-        const group = board.groups.find(group => group._id === groupId)
+        const group = board.groups.find((group) => group._id === groupId)
         if (!group) throw new Error('Group not found')
 
-        const taskIdx = group.tasks.findIndex(task => task._id === taskId)
+        const taskIdx = group.tasks.findIndex((task) => task._id === taskId)
         if (taskIdx === -1) throw new Error('Task not found')
 
         group.tasks[taskIdx] = { ...group.tasks[taskIdx], ...taskChanges }
@@ -249,12 +243,11 @@ async function updateTask(boardId, groupId, taskId, taskChanges) {
 
 async function removeTask(boardId, groupId, taskId) {
     try {
-
         const collection = await dbService.getCollection('board')
         const board = await getById(boardId)
-        const group = board.groups.find(group => group._id === groupId)
+        const group = board.groups.find((group) => group._id === groupId)
         if (!group) throw new Error('Group not found')
-        const taskIdx = group.tasks.findIndex(task => task._id === taskId)
+        const taskIdx = group.tasks.findIndex((task) => task._id === taskId)
         if (taskIdx === -1) throw new Error('Task not found')
         const removedTask = group.tasks.splice(taskIdx, 1)
         await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { groups: board.groups } })
@@ -263,8 +256,7 @@ async function removeTask(boardId, groupId, taskId) {
         logger.error(`cannot remove task from group ${groupId} in board ${boardId}`, err)
         throw err
     }
-} 
-
+}
 
 function _buildCriteria(filterBy) {
     const criteria = {
@@ -276,49 +268,43 @@ function _buildCriteria(filterBy) {
 }
 
 function _buildSort(filterBy) {
-    if(!filterBy.sortField) return {}
+    if (!filterBy.sortField) return {}
     return { [filterBy.sortField]: filterBy.sortDir }
 }
 
-
 function _getEmptyBoard(boardTitle, boardLabel, createdBy) {
-    const task1 = _createTask(boardLabel + ' 1')
-    const task2 = _createTask(boardLabel + ' 2' )
-    const task3 = _createTask(boardLabel + ' 3' )
-    const task4 = _createTask(boardLabel + ' 4' )
-    const task5 = _createTask(boardLabel + ' 5' )
+    const task1 = _createTask(boardLabel + ' 1', { status: 'Done', priority: 'High' })
+    const task2 = _createTask(boardLabel + ' 2', { status: 'Working on it', priority: 'Medium' })
+    const task3 = _createTask(boardLabel + ' 3')
+    const task4 = _createTask(boardLabel + ' 4')
+    const task5 = _createTask(boardLabel + ' 5')
 
     return {
-        title:boardTitle,
-        description:'Manage any type of project. Assign owners, set timelines and keep track of where your project stands.',
+        title: boardTitle,
+        description:
+            'Manage any type of project. Assign owners, set timelines and keep track of where your project stands.',
         isStarred: false,
         archivedAt: null,
         createdBy,
-        label:boardLabel,
+        label: boardLabel,
         members: [],
-        groups: [_getEmptyGroup('Group Title', [task1, task2, task3]), _getEmptyGroup('Group Title', [task4, task5])],
+        groups: [
+            _getEmptyGroup('Group Title', { backgroundColor: '#579bfc' }, [task1, task2, task3]),
+            _getEmptyGroup('Group Title', { backgroundColor: '#a25ddc' }, [task4, task5]),
+        ],
         activities: [],
-        cmpsOrder: [
-            "checkbox",
-            "title",
-            "description",
-            "priority",
-            "dueDate",
-            "memberIds",
-            "status",
-            "files"
-        ]
+        cmpsOrder: ['checkbox', 'title', 'description', 'status', 'dueDate', 'priority', 'memberIds', 'files'],
     }
 }
 
-function _getEmptyGroup(title, tasks = []) {
+function _getEmptyGroup(title, style = {}, tasks = []) {
     return {
         _id: makeId(),
         title,
         archivedAt: null,
-        style: {},
-        tasks
-    };
+        style,
+        tasks,
+    }
 }
 
 function _getEmptyTask(title = 'New Task') {
@@ -341,7 +327,7 @@ export function _createTask(title, options = {}) {
         title,
         archivedAt: options.archivedAt || null,
         status: options.status || 'Not Started',
-        priority: options.priority ||'low',
+        priority: options.priority || 'Low',
         dueDate: options.dueDate || null,
         description: options.description || null,
         comments: options.comments || [],
