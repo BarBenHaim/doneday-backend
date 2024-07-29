@@ -4,7 +4,8 @@ import {socketService} from '../../services/socket.service.js'
 
 export async function getUser(req, res) {
     try {
-        const user = await userService.getById(req.params.id)
+        const userId = req.params.userId
+        const user = await userService.getById(userId)
         res.send(user)
     } catch (err) {
         logger.error('Failed to get user', err)
@@ -27,7 +28,7 @@ export async function getUsers(req, res) {
 
 export async function deleteUser(req, res) {
     try {
-        await userService.remove(req.params.id)
+        await userService.remove(req.params._id)
         res.send({ msg: 'Deleted successfully' })
     } catch (err) {
         logger.error('Failed to delete user', err)
@@ -44,4 +45,19 @@ export async function updateUser(req, res) {
         logger.error('Failed to update user', err)
         res.status(400).send({ err: 'Failed to update user' })
     }
+}
+
+// export function getUserActivity( fullname, action) {
+//     return {
+//         text: `${fullname} has ${action}`,
+//         timestamp: Date.now()
+//     };
+// }
+
+export function getUserActivity(fullname, action) {
+    return {
+        fullname,
+        action,
+        timestamp: new Date().toISOString(),
+    };
 }
