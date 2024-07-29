@@ -77,36 +77,6 @@ export async function removeBoard(req, res) {
     }
 }
 
-export async function addBoardMsg(req, res) {
-    // const { loggedinUser } = req
-
-    try {
-        const boardId = req.params.boardId
-        const msg = {
-            txt: req.body.txt,
-            // by: loggedinUser,
-        }
-        const savedMsg = await boardService.addBoardMsg(boardId, msg)
-        res.json(savedMsg)
-    } catch (err) {
-        logger.error('Failed to update board', err)
-        res.status(400).send({ err: 'Failed to update board' })
-    }
-}
-
-export async function removeBoardMsg(req, res) {
-    try {
-        const boardId = req.params.boardId
-        const { msgId } = req.params
-
-        const removedId = await boardService.removeBoardMsg(boardId, msgId)
-        res.send(removedId)
-    } catch (err) {
-        logger.error('Failed to remove board msg', err)
-        res.status(400).send({ err: 'Failed to remove board msg' })
-    }
-}
-
 export async function initDB(req, res) {
     try {
         const board = readJsonFile('api/data/board.json')
@@ -131,10 +101,16 @@ export async function initDB(req, res) {
 }
 
 export async function addGroup(req, res) {
+    const { loggedinUser } = req
+
     try {
         const boardId = req.params.boardId
         const group = req.body // Receive the whole body
         const newGroup = await boardService.addGroup(boardId, group)
+
+        const activity = getUserActivity(loggedinUser.fullname, 'added a group')
+        await userService.addActivity(loggedinUser._id, activity)
+
         res.json(newGroup) // Return the entire newGroup object
     } catch (err) {
         logger.error('Failed to add group', err)
@@ -143,11 +119,17 @@ export async function addGroup(req, res) {
 }
 
 export async function updateGroup(req, res) {
+    const { loggedinUser } = req;
+
     try {
         const boardId = req.params.boardId
         const groupId = req.params.groupId
         const groupChanges = req.body
         const updatedGroup = await boardService.updateGroup(boardId, groupId, groupChanges)
+
+        const activity = getUserActivity(loggedinUser.fullname, 'updated a group');
+        await userService.addActivity(loggedinUser._id, activity);
+
         res.json(updatedGroup)
     } catch (err) {
         logger.error('Failed to update group', err)
@@ -156,10 +138,15 @@ export async function updateGroup(req, res) {
 }
 
 export async function removeGroup(req, res) {
+    const { loggedinUser } = req;
     try {
         const boardId = req.params.boardId
         const groupId = req.params.groupId
         const removedGroup = await boardService.removeGroup(boardId, groupId)
+
+        const activity = getUserActivity(loggedinUser.fullname, 'removed a group');
+        await userService.addActivity(loggedinUser._id, activity);
+
         res.json(removedGroup)
     } catch (err) {
         logger.error('Failed to remove group', err)
@@ -168,11 +155,17 @@ export async function removeGroup(req, res) {
 }
 
 export async function addTask(req, res) {
+    const { loggedinUser } = req;
+
     try {
         const boardId = req.params.boardId
         const groupId = req.params.groupId
         const task = req.body
         const addedTask = await boardService.addTask(boardId, groupId, task)
+
+        const activity = getUserActivity(loggedinUser.fullname, 'added a task');
+        await userService.addActivity(loggedinUser._id, activity);
+
         res.json(addedTask)
     } catch (err) {
         logger.error('Failed to add task', err)
@@ -181,12 +174,18 @@ export async function addTask(req, res) {
 }
 
 export async function updateTask(req, res) {
+    const { loggedinUser } = req;
+
     try {
         const boardId = req.params.boardId
         const groupId = req.params.groupId
         const taskId = req.params.taskId
         const taskChanges = req.body
         const updatedTask = await boardService.updateTask(boardId, groupId, taskId, taskChanges)
+
+        const activity = getUserActivity(loggedinUser.fullname, 'updated a task');
+        await userService.addActivity(loggedinUser._id, activity);
+
         res.json(updatedTask)
     } catch (err) {
         logger.error('Failed to update task', err)
@@ -195,11 +194,17 @@ export async function updateTask(req, res) {
 }
 
 export async function removeTask(req, res) {
+    const { loggedinUser } = req;
+
     try {
         const boardId = req.params.boardId
         const groupId = req.params.groupId
         const taskId = req.params.taskId
         const removedTask = await boardService.removeTask(boardId, groupId, taskId)
+
+        const activity = getUserActivity(loggedinUser.fullname, 'removed a task');
+        await userService.addActivity(loggedinUser._id, activity);
+
         res.json(removedTask)
     } catch (err) {
         logger.error('Failed to remove task', err)
@@ -222,22 +227,28 @@ export async function getComments(req, res) {
 
 export async function addComment(req, res) {
     const { loggedinUser } = req
+// console.log("req addComment", req)
+// console.log("req.body addComment", req.body)
 
     try {
         const boardId = req.params.boardId
         const groupId = req.params.groupId
         const taskId = req.params.taskId
 
+        console.log("req.params addComment", req.params)
+
         const comment = {
-            txt: req.body.txt,
+            title: req.body.title,
             byMember: {
                 _id: loggedinUser._id,
                 fullname: loggedinUser.fullname,
                 imgUrl: loggedinUser.imgUrl,
             },
         }
+        // console.log("comment", comment)
 
         const savedComment = await boardService.addComment(boardId, groupId, taskId, comment)
+
         res.json(savedComment)
     } catch (err) {
         logger.error('Failed to add comment', err)

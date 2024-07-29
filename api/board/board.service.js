@@ -232,129 +232,126 @@ async function removeTask(boardId, groupId, taskId) {
 
 async function getComments(boardId, groupId, taskId) {
     try {
-        const board = await getById(boardId);
+        const board = await getById(boardId)
 
-        let item;
+        let item
         if (taskId) {
-            const group = board.groups.find((group) => group._id === groupId);
-            if (!group) throw new Error('Group not found');
-            item = group.tasks.find((task) => task._id === taskId);
+            const group = board.groups.find((group) => group._id === groupId)
+            if (!group) throw new Error('Group not found')
+            item = group.tasks.find((task) => task._id === taskId)
         } else if (groupId) {
-            item = board.groups.find((group) => group._id === groupId);
+            item = board.groups.find((group) => group._id === groupId)
         } else {
-            item = board;
+            item = board
         }
 
-        if (!item) throw new Error('Item not found');
-        return item.comments || [];
+        if (!item) throw new Error('Item not found')
+        return item.comments || []
     } catch (err) {
-        logger.error(`Cannot get comments for item in board ${boardId}`, err);
-        throw err;
+        logger.error(`Cannot get comments for item in board ${boardId}`, err)
+        throw err
     }
 }
 
 async function addComment(boardId, groupId, taskId, comment, user) {
-
     try {
 
-        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME);
-        const board = await getById(boardId);
+        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
+        const board = await getById(boardId)
 
-
-        let item;
+        let item
         if (taskId) {
-
-            const group = board.groups.find((group) => group._id === groupId);
-            if (!group) throw new Error('Group not found');
-            item = group.tasks.find((task) => task._id === taskId);
+            const group = board.groups.find((group) => group._id === groupId)
+            if (!group) throw new Error('Group not found')
+            item = group.tasks.find((task) => task._id === taskId)
         } else if (groupId) {
-            item = board.groups.find((group) => group._id === groupId);
+            item = board.groups.find((group) => group._id === groupId)
         } else {
-            item = board;
+            item = board
         }
 
-        if (!item) throw new Error('Item not found');
-        if (!item.comments) item.comments = [];
+        if (!item) throw new Error('Item not found')
+        if (!item.comments) item.comments = []
         const newComment = {
             _id: makeId(),
-            title: comment.txt,
+            title: comment.title,
             createdAt: Date.now(),
             byMember: {
                 _id: comment.byMember._id,
                 fullname: comment.byMember.fullname,
-                imgUrl: comment.byMember.imgUrl
-            }
-        };
+                imgUrl: comment.byMember.imgUrl,
+            },
+        }
 
-        item.comments.push(newComment);
+        item.comments.push(newComment)
 
-        await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { groups: board.groups } });
+        await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { groups: board.groups } })
 
-        return newComment;
+        return newComment
     } catch (err) {
-        logger.error(`Cannot add comment to item in board ${board._id}`, err);
-        throw err;
+        logger.error(`Cannot add comment to item in board ${board._id}`, err)
+        throw err
     }
 }
 
 async function deleteComment(boardId, groupId, taskId, commentId, userId) {
     try {
-        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME);
-        const board = await getById(boardId);
+        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
+        const board = await getById(boardId)
 
-        let item;
+        let item
         if (taskId) {
-            const group = board.groups.find((group) => group._id === groupId);
-            if (!group) throw new Error('Group not found');
-            item = group.tasks.find((task) => task._id === taskId);
+            const group = board.groups.find((group) => group._id === groupId)
+            if (!group) throw new Error('Group not found')
+            item = group.tasks.find((task) => task._id === taskId)
         } else if (groupId) {
-            item = board.groups.find((group) => group._id === groupId);
+            item = board.groups.find((group) => group._id === groupId)
         } else {
-            item = board;
+            item = board
         }
 
-        if (!item) throw new Error('Item not found');
-        const commentIdx = item.comments.findIndex((comment) => comment._id === commentId);
-        if (commentIdx === -1) throw new Error('Comment not found');
+        if (!item) throw new Error('Item not found')
+        const commentIdx = item.comments.findIndex((comment) => comment._id === commentId)
+        if (commentIdx === -1) throw new Error('Comment not found')
         if (item.comments[commentIdx].byMember._id !== userId) throw new Error('Not authorized to delete this comment')
 
-        item.comments.splice(commentIdx, 1);
-        await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { groups: board.groups } });
-        return commentId;
+        item.comments.splice(commentIdx, 1)
+        await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { groups: board.groups } })
+        return commentId
     } catch (err) {
-        logger.error(`Cannot delete comment from item in board ${boardId}`, err);
-        throw err;
+        logger.error(`Cannot delete comment from item in board ${boardId}`, err)
+        throw err
     }
 }
 
-async function updateComment(boardId, groupId, taskId, commentId, updatedComment,  userId) {
+async function updateComment(boardId, groupId, taskId, commentId, updatedComment, userId) {
     try {
-        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME);
-        const board = await getById(boardId);
+        const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
+        const board = await getById(boardId)
 
-        let item;
+        let item
         if (taskId) {
-            const group = board.groups.find((group) => group._id === groupId);
-            if (!group) throw new Error('Group not found');
-            item = group.tasks.find((task) => task._id === taskId);
+            const group = board.groups.find((group) => group._id === groupId)
+            if (!group) throw new Error('Group not found')
+            item = group.tasks.find((task) => task._id === taskId)
         } else if (groupId) {
-            item = board.groups.find((group) => group._id === groupId);
+            item = board.groups.find((group) => group._id === groupId)
         } else {
-            item = board;
+            item = board
         }
 
-        if (!item) throw new Error('Item not found');
-        const commentIdx = item.comments.findIndex((comment) => comment._id === commentId);
-        if (commentIdx === -1) throw new Error('Comment not found');
-        if (item.comments[commentIdx].byMember._id !== userId) throw new Error('Not authorized to update this comment');
+        if (!item) throw new Error('Item not found')
+        const commentIdx = item.comments.findIndex((comment) => comment._id === commentId)
+        if (commentIdx === -1) throw new Error('Comment not found')
+        if (item.comments[commentIdx].byMember._id !== userId) throw new Error('Not authorized to update this comment')
 
-        item.comments[commentIdx] = { ...item.comments[commentIdx], ...updatedComment };
+        item.comments[commentIdx] = { ...item.comments[commentIdx], ...updatedComment }
 
-        await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { groups: board.groups } });
-        return item.comments[commentIdx];
+        await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { groups: board.groups } })
+        return item.comments[commentIdx]
     } catch (err) {
-        logger.error(`Cannot update comment ${commentId} in item in board ${boardId}`, err);
-        throw err;
+        logger.error(`Cannot update comment ${commentId} in item in board ${boardId}`, err)
+        throw err
     }
 }
 // async function addTaskComment(boardId, groupId, taskId, comment) {
