@@ -1,4 +1,5 @@
 import { logger } from '../../services/logger.service.js'
+import { socketService } from '../../services/socket.service.js'
 import { readJsonFile } from '../../services/util.service.js'
 import { getUserActivity } from '../user/user.controller.js'
 import { userService } from '../user/user.service.js'
@@ -119,7 +120,7 @@ export async function addGroup(req, res) {
 }
 
 export async function updateGroup(req, res) {
-    const { loggedinUser } = req;
+    const { loggedinUser } = req
 
     try {
         const boardId = req.params.boardId
@@ -127,8 +128,8 @@ export async function updateGroup(req, res) {
         const groupChanges = req.body
         const updatedGroup = await boardService.updateGroup(boardId, groupId, groupChanges)
 
-        const activity = getUserActivity(loggedinUser.fullname, 'updated a group');
-        await userService.addActivity(loggedinUser._id, activity);
+        const activity = getUserActivity(loggedinUser.fullname, 'updated a group')
+        await userService.addActivity(loggedinUser._id, activity)
 
         res.json(updatedGroup)
     } catch (err) {
@@ -138,14 +139,14 @@ export async function updateGroup(req, res) {
 }
 
 export async function removeGroup(req, res) {
-    const { loggedinUser } = req;
+    const { loggedinUser } = req
     try {
         const boardId = req.params.boardId
         const groupId = req.params.groupId
         const removedGroup = await boardService.removeGroup(boardId, groupId)
 
-        const activity = getUserActivity(loggedinUser.fullname, 'removed a group');
-        await userService.addActivity(loggedinUser._id, activity);
+        const activity = getUserActivity(loggedinUser.fullname, 'removed a group')
+        await userService.addActivity(loggedinUser._id, activity)
 
         res.json(removedGroup)
     } catch (err) {
@@ -155,7 +156,7 @@ export async function removeGroup(req, res) {
 }
 
 export async function addTask(req, res) {
-    const { loggedinUser } = req;
+    const { loggedinUser } = req
 
     try {
         const boardId = req.params.boardId
@@ -163,8 +164,8 @@ export async function addTask(req, res) {
         const task = req.body
         const addedTask = await boardService.addTask(boardId, groupId, task)
 
-        const activity = getUserActivity(loggedinUser.fullname, 'added a task');
-        await userService.addActivity(loggedinUser._id, activity);
+        const activity = getUserActivity(loggedinUser.fullname, 'added a task')
+        await userService.addActivity(loggedinUser._id, activity)
 
         res.json(addedTask)
     } catch (err) {
@@ -174,7 +175,7 @@ export async function addTask(req, res) {
 }
 
 export async function updateTask(req, res) {
-    const { loggedinUser } = req;
+    const { loggedinUser } = req
 
     try {
         const boardId = req.params.boardId
@@ -183,8 +184,8 @@ export async function updateTask(req, res) {
         const taskChanges = req.body
         const updatedTask = await boardService.updateTask(boardId, groupId, taskId, taskChanges)
 
-        const activity = getUserActivity(loggedinUser.fullname, 'updated a task');
-        await userService.addActivity(loggedinUser._id, activity);
+        const activity = getUserActivity(loggedinUser.fullname, 'updated a task')
+        await userService.addActivity(loggedinUser._id, activity)
 
         res.json(updatedTask)
     } catch (err) {
@@ -194,7 +195,7 @@ export async function updateTask(req, res) {
 }
 
 export async function removeTask(req, res) {
-    const { loggedinUser } = req;
+    const { loggedinUser } = req
 
     try {
         const boardId = req.params.boardId
@@ -202,8 +203,8 @@ export async function removeTask(req, res) {
         const taskId = req.params.taskId
         const removedTask = await boardService.removeTask(boardId, groupId, taskId)
 
-        const activity = getUserActivity(loggedinUser.fullname, 'removed a task');
-        await userService.addActivity(loggedinUser._id, activity);
+        const activity = getUserActivity(loggedinUser.fullname, 'removed a task')
+        await userService.addActivity(loggedinUser._id, activity)
 
         res.json(removedTask)
     } catch (err) {
@@ -227,29 +228,27 @@ export async function getComments(req, res) {
 
 export async function addComment(req, res) {
     const { loggedinUser } = req
-// console.log("req addComment", req)
-// console.log("req.body addComment", req.body)
+    // console.log("loggedinUser addComment", loggedinUser)
+    // console.log("req.body addComment", req.body)
 
     try {
         const boardId = req.params.boardId
         const groupId = req.params.groupId
         const taskId = req.params.taskId
 
-        console.log("req.params addComment", req.params)
+        console.log('req.params addComment', req.params)
+        var comment = req.body
+        comment.byMember = loggedinUser._id
+        comment = await boardService.addComment(boardId, groupId, taskId, comment)
+        // const savedComment = await boardService.addComment(boardId, groupId, taskId, comment)
+        comment.byMember = loggedinUser
 
-        const comment = {
-            title: req.body.title,
-            byMember: {
-                _id: loggedinUser._id,
-                fullname: loggedinUser.fullname,
-                imgUrl: loggedinUser.imgUrl,
-            },
-        }
-        // console.log("comment", comment)
+        // Send an emit to all users but the sender about a comment added
+        socketService.broadcast({ type: 'comment-added', data: comment, userId: loggedinUser._id })
+        // Emit a msg to the user the comment is written about
+        //   socketService.emitToUser({ type: 'comment-about-you', data: comment, userId: comment.aboutUser._id })
 
-        const savedComment = await boardService.addComment(boardId, groupId, taskId, comment)
-
-        res.json(savedComment)
+        res.json(comment)
     } catch (err) {
         logger.error('Failed to add comment', err)
         res.status(400).send({ err: 'Failed to add comment' })
@@ -266,6 +265,13 @@ export async function deleteComment(req, res) {
         const commentId = req.params.commentId
 
         const removedId = await boardService.deleteComment(boardId, groupId, taskId, commentId, loggedinUser._id)
+        if (removedId) {
+            // Send an emit to all users but the sender about a review removed
+            socketService.broadcast({ type: 'comment-removed', data: commentId, userId: loggedinUser._id })
+            res.send({ msg: 'Deleted successfully' })
+        } else {
+            res.status(400).send({ err: 'Cannot remove review' })
+        }
         res.send(removedId)
     } catch (err) {
         logger.error('Failed to delete comment', err)
@@ -296,37 +302,3 @@ export async function updateComment(req, res) {
         res.status(400).send({ err: 'Failed to update comment' })
     }
 }
-
-// export async function addTaskComment(req, res) {
-//     const { loggedinUser } = req
-
-//     try {
-//         const boardId = req.params.boardId
-//         const groupId = req.params.groupId
-//         const taskId = req.params.taskId
-//         const comment = {
-//             txt: req.body.txt,
-//             by: loggedinUser,
-//         }
-//         const savedComment = await boardService.addTaskComment(boardId, groupId, taskId, comment)
-//         res.json(savedComment)
-//     } catch (err) {
-//         logger.error('Failed to update board', err)
-//         res.status(400).send({ err: 'Failed to update board' })
-//     }
-// }
-
-// export async function removeTaskComment(req, res) {
-//     try {
-//         const boardId = req.params.boardId;
-//         const groupId = req.params.groupId;
-//         const taskId = req.params.taskId;
-//         const commentId = req.params.commentId;
-
-//         const removedId = await boardService.removeTaskComment(boardId, groupId, taskId, commentId);
-//         res.send(removedId);
-//     } catch (err) {
-//         logger.error('Failed to remove task comment', err);
-//         res.status(400).send({ err: 'Failed to remove task comment' });
-//     }
-// }
