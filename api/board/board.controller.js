@@ -66,7 +66,9 @@ export async function removeBoard(req, res) {
 
         await boardService.logActivity(boardId, loggedinUser._id, 'delete', 'board', boardId)
 
-        socketService.broadcast({ type: 'board-removed', data: boardId, room: boardId, userId: loggedinUser._id })
+        socketService.broadcast({ type: 'board-removed', data: boardId, 
+            // room: boardId,
+            userId: loggedinUser._id })
 
         res.send(removedBoard)
     } catch (err) {

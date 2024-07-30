@@ -4,7 +4,6 @@ import { logger } from '../../services/logger.service.js'
 import { makeId } from '../../services/util.service.js'
 import { dbService } from '../../services/db.service.js'
 import { asyncLocalStorage } from '../../services/als.service.js'
-import Board from './modal/board.model.js'
 
 const BOARD_COLLECTION_NAME = 'board'
 
@@ -64,7 +63,7 @@ async function getById(boardId) {
 }
 
 async function removeBoard(boardId) {
-    // const { loggedinUser } = asyncLocalStorage.getStore()
+    const { loggedinUser } = asyncLocalStorage.getStore()
     // const { _id: ownerId, isAdmin } = loggedinUser
 
     try {
@@ -93,6 +92,9 @@ async function addBoard(board) {
         }
         await collection.insertOne(newBoard)
 
+        const activity = _createActivity(board.createdBy._id, 'create', 'board', newBoard._id);
+        newBoard.activities.push(activity);
+        await collection.updateOne({ _id: newBoard._id }, { $set: { activities: newBoard.activities } });
         return newBoard
     } catch (err) {
         logger.error('cannot insert board', err)
@@ -383,7 +385,7 @@ async function updateComment(boardId, groupId, taskId, commentId, updatedComment
 
         item.comments[commentIdx] = { ...item.comments[commentIdx], ...updatedComment }
 
-        await logActivity(boardId, loggedinUser._id, 'update', 'comment', commentId)
+        // await logActivity(boardId, loggedinUser._id, 'update', 'comment', commentId)
 
         await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { groups: board.groups } })
         return item.comments[commentIdx]
@@ -394,9 +396,11 @@ async function updateComment(boardId, groupId, taskId, commentId, updatedComment
 }
 
 async function logActivity(boardId, userId, action, entity, entityId) {
-    const board = await Board.findById(boardId)
+    const collection = await dbService.getCollection(BOARD_COLLECTION_NAME);
+    const board = await collection.findOne({ _id: ObjectId.createFromHexString(boardId) });
+
     if (board) {
-        const activity = { userId, action, entity, entityId,  timestamp: new Date() }
+        const activity = { userId, action, entity, entityId, timestamp: new Date() };
         if (!board.activities) {
             board.activities = [];
         }
@@ -404,40 +408,40 @@ async function logActivity(boardId, userId, action, entity, entityId) {
 
         // Find and log activity in the specific entity
         if (entity === 'group') {
-            const group = board.groups.id(entityId)
+            const group = board.groups.find(group => group._id === entityId);
             if (group) {
                 if (!group.activities) {
                     group.activities = [];
                 }
                 group.activities.push(activity);
             }
-            }
         } else if (entity === 'task') {
-            board.groups.forEach((group) => {
-                const task = group.tasks.id(entityId)
+            board.groups.forEach(group => {
+                const task = group.tasks.find(task => task._id === entityId);
                 if (task) {
                     if (!task.activities) {
                         task.activities = [];
                     }
                     task.activities.push(activity);
                 }
-            })
+            });
         } else if (entity === 'comment') {
-            board.groups.forEach((group) => {
-                group.tasks.forEach((task) => {
-                    const comment = task.comments.id(entityId)
+            board.groups.forEach(group => {
+                group.tasks.forEach(task => {
+                    const comment = task.comments.find(comment => comment._id === entityId);
                     if (comment) {
                         if (!comment.activities) {
                             comment.activities = [];
                         }
+                        comment.activities.push(activity);
                     }
-                })
-            })
+                });
+            });
         }
 
-        await board.save()
+        await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { activities: board.activities, groups: board.groups } });
     }
-
+}
 
 async function getBoardActivities(boardId) {
     try {
@@ -531,3 +535,12 @@ export function _createTask(title, options = {}) {
         style: options.style || {},
     }
 }
+
+const _createActivity = (userId, action, entity, entityId) => ({
+    userId,
+    action,
+    entity,
+    entityId,
+    timestamp: new Date()
+  });
+  
