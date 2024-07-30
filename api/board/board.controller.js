@@ -31,12 +31,9 @@ export async function addBoard(req, res) {
 
     try {
         board.createdBy = loggedinUser
-        // loggedinUser?.activites.push(getUserActivity(loggedinUser.username,'Added a board'))
-        logger.debug(board)
         const addedBoard = await boardService.addBoard(board)
 
-        const activity = getUserActivity(loggedinUser.fullname, 'added a board')
-        await userService.addActivity(loggedinUser._id, activity)
+        socketService.broadcast({ type: 'board-added', data: addedBoard, room: board._id, userId: loggedinUser._id })
 
         res.json(addedBoard)
     } catch (err) {
@@ -47,13 +44,12 @@ export async function addBoard(req, res) {
 
 export async function updateBoard(req, res) {
     const { loggedinUser, body: board } = req
-    // const { _id: userId, isAdmin } = loggedinUser
     try {
-        // const board = req.body
         const updatedBoard = await boardService.updateBoard(board)
 
-        const activity = getUserActivity(loggedinUser.fullname, 'updated a board')
-        await userService.addActivity(loggedinUser._id, activity)
+        await boardService.logActivity(board._id, loggedinUser._id, 'update', 'board', board._id)
+        
+        socketService.broadcast({ type: 'board-changed', data: updatedBoard, room: board._id, userId: loggedinUser._id })
 
         res.json(updatedBoard)
     } catch (err) {
@@ -68,8 +64,9 @@ export async function removeBoard(req, res) {
         const boardId = req.params.boardId
         const removedBoard = await boardService.removeBoard(boardId)
 
-        const activity = getUserActivity(loggedinUser.fullname, 'removed a board')
-        await userService.addActivity(loggedinUser._id, activity)
+        await boardService.logActivity(boardId, loggedinUser._id, 'delete', 'board', boardId)
+
+        socketService.broadcast({ type: 'board-removed', data: boardId, room: boardId, userId: loggedinUser._id })
 
         res.send(removedBoard)
     } catch (err) {
@@ -109,8 +106,10 @@ export async function addGroup(req, res) {
         const group = req.body // Receive the whole body
         const newGroup = await boardService.addGroup(boardId, group)
 
-        const activity = getUserActivity(loggedinUser.fullname, 'added a group')
-        await userService.addActivity(loggedinUser._id, activity)
+        await boardService.logActivity(boardId, loggedinUser._id, 'create', 'group', newGroup._id)
+
+        socketService.broadcast({ type: 'group-added', data: newGroup, room: boardId, userId: loggedinUser._id })
+
 
         res.json(newGroup) // Return the entire newGroup object
     } catch (err) {
@@ -128,8 +127,10 @@ export async function updateGroup(req, res) {
         const groupChanges = req.body
         const updatedGroup = await boardService.updateGroup(boardId, groupId, groupChanges)
 
-        const activity = getUserActivity(loggedinUser.fullname, 'updated a group')
-        await userService.addActivity(loggedinUser._id, activity)
+        await boardService.logActivity(boardId, loggedinUser._id, 'update', 'group', groupId)
+
+        socketService.broadcast({ type: 'group-updated', data: updatedGroup, room: boardId, userId: loggedinUser._id })
+
 
         res.json(updatedGroup)
     } catch (err) {
@@ -145,8 +146,10 @@ export async function removeGroup(req, res) {
         const groupId = req.params.groupId
         const removedGroup = await boardService.removeGroup(boardId, groupId)
 
-        const activity = getUserActivity(loggedinUser.fullname, 'removed a group')
-        await userService.addActivity(loggedinUser._id, activity)
+        await boardService.logActivity(boardId, loggedinUser._id, 'delete', 'group', groupId)
+
+        socketService.broadcast({ type: 'group-removed', data: removedGroup, room: boardId, userId: loggedinUser._id })
+
 
         res.json(removedGroup)
     } catch (err) {
@@ -164,8 +167,10 @@ export async function addTask(req, res) {
         const task = req.body
         const addedTask = await boardService.addTask(boardId, groupId, task)
 
-        const activity = getUserActivity(loggedinUser.fullname, 'added a task')
-        await userService.addActivity(loggedinUser._id, activity)
+        await boardService.logActivity(boardId, loggedinUser._id, 'create', 'task', addedTask._id)
+
+        socketService.broadcast({ type: 'task-added', data: addedTask, room: boardId, userId: loggedinUser._id })
+
 
         res.json(addedTask)
     } catch (err) {
@@ -184,8 +189,10 @@ export async function updateTask(req, res) {
         const taskChanges = req.body
         const updatedTask = await boardService.updateTask(boardId, groupId, taskId, taskChanges)
 
-        const activity = getUserActivity(loggedinUser.fullname, 'updated a task')
-        await userService.addActivity(loggedinUser._id, activity)
+        await boardService.logActivity(boardId, loggedinUser._id, 'update', 'task', taskId)
+
+        socketService.broadcast({ type: 'task-updated', data: updatedTask, room: boardId, userId: loggedinUser._id })
+
 
         res.json(updatedTask)
     } catch (err) {
@@ -203,8 +210,10 @@ export async function removeTask(req, res) {
         const taskId = req.params.taskId
         const removedTask = await boardService.removeTask(boardId, groupId, taskId)
 
-        const activity = getUserActivity(loggedinUser.fullname, 'removed a task')
-        await userService.addActivity(loggedinUser._id, activity)
+        await boardService.logActivity(boardId, loggedinUser._id, 'delete', 'task', taskId)
+
+        socketService.broadcast({ type: 'task-removed', data: removedTask, room: boardId, userId: loggedinUser._id })
+
 
         res.json(removedTask)
     } catch (err) {
@@ -228,26 +237,21 @@ export async function getComments(req, res) {
 
 export async function addComment(req, res) {
     const { loggedinUser } = req
-    // console.log("loggedinUser addComment", loggedinUser)
-    // console.log("req.body addComment", req.body)
 
     try {
         const boardId = req.params.boardId
         const groupId = req.params.groupId
         const taskId = req.params.taskId
 
-        console.log('req.params addComment', req.params)
         var comment = req.body
         comment.byMember = loggedinUser._id
         comment = await boardService.addComment(boardId, groupId, taskId, comment)
-        // const savedComment = await boardService.addComment(boardId, groupId, taskId, comment)
         comment.byMember = loggedinUser
 
-        // Send an emit to all users but the sender about a comment added
-        socketService.broadcast({ type: 'comment-added', data: comment, userId: loggedinUser._id })
-        // Emit a msg to the user the comment is written about
-        //   socketService.emitToUser({ type: 'comment-about-you', data: comment, userId: comment.aboutUser._id })
+        await boardService.logActivity(boardId, loggedinUser._id, 'create', 'comment', comment._id)
 
+        socketService.broadcast({ type: 'comment-added', data: comment, room: boardId, userId: loggedinUser._id })
+  
         res.json(comment)
     } catch (err) {
         logger.error('Failed to add comment', err)
@@ -263,14 +267,17 @@ export async function deleteComment(req, res) {
         const groupId = req.params.groupId
         const taskId = req.params.taskId
         const commentId = req.params.commentId
-
         const removedId = await boardService.deleteComment(boardId, groupId, taskId, commentId, loggedinUser._id)
+
         if (removedId) {
-            // Send an emit to all users but the sender about a review removed
-            socketService.broadcast({ type: 'comment-removed', data: commentId, userId: loggedinUser._id })
+
+            await boardService.logActivity(boardId, loggedinUser._id, 'delete', 'comment', commentId)
+
+            socketService.broadcast({ type: 'comment-removed', data: commentId, room: boardId, userId: loggedinUser._id })
+
             res.send({ msg: 'Deleted successfully' })
         } else {
-            res.status(400).send({ err: 'Cannot remove review' })
+            res.status(400).send({ err: 'Cannot remove comment' })
         }
         res.send(removedId)
     } catch (err) {
@@ -296,9 +303,25 @@ export async function updateComment(req, res) {
             updatedComment,
             loggedinUser._id
         )
+
+        await boardService.logActivity(boardId, loggedinUser._id, 'update', 'comment', commentId)
+
+        socketService.broadcast({ type: 'comment-update', data: savedComment,room: boardId, userId: loggedinUser._id })
+
         res.json(savedComment)
     } catch (err) {
         logger.error('Failed to update comment', err)
         res.status(400).send({ err: 'Failed to update comment' })
+    }
+}
+
+export async function getBoardActivities(req, res) {
+    try {
+        const boardId = req.params.boardId
+        const activities = await boardService.getBoardActivities(boardId)
+        res.json(activities)
+    } catch (err) {
+        logger.error('Failed to get board activities', err)
+        res.status(400).send({ err: 'Failed to get board activities' })
     }
 }
