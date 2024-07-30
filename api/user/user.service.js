@@ -1,29 +1,28 @@
-import {dbService} from '../../services/db.service.js'
-import {logger} from '../../services/logger.service.js'
+import { dbService } from '../../services/db.service.js'
+import { logger } from '../../services/logger.service.js'
 import { ObjectId } from 'mongodb'
 
 export const userService = {
-	add, // Create (Signup)
-	getById, // Read (Profile page)
-	update, // Update (Edit profile)
-	remove, // Delete (remove user)
-	query, // List (of users)
-	getByEmail, // Used for Login
+    add,
+    getById, 
+    update, 
+    remove, 
+    query, 
+    getByEmail, 
+    addActivity,
 }
 
 const USER_COLLECTION_NAME = 'user'
-
 
 async function query(filterBy = {}) {
     const criteria = _buildCriteria(filterBy)
     try {
         const collection = await dbService.getCollection(USER_COLLECTION_NAME)
         var users = await collection.find(criteria).toArray()
-        users = users.map(user => {
+        users = users.map((user) => {
             delete user.password
             user.createdAt = user._id.getTimestamp()
-            // Returning fake fresh data
-            // user.createdAt = Date.now() - (1000 * 60 * 60 * 24 * 3) // 3 days ago
+
             return user
         })
         return users
@@ -39,15 +38,8 @@ async function getById(userId) {
 
         const collection = await dbService.getCollection(USER_COLLECTION_NAME)
         const user = await collection.findOne(criteria)
+
         delete user.password
-
-        criteria = { byUserId: userId }
-
-        // user.givenReviews = await reviewService.query(criteria)
-        // user.givenReviews = user.givenReviews.map(review => {
-        //     delete review.byUser
-        //     return review
-        // })
 
         return user
     } catch (err) {
@@ -57,14 +49,14 @@ async function getById(userId) {
 }
 
 async function getByEmail(email) {
-	try {
-		const collection = await dbService.getCollection(USER_COLLECTION_NAME)
-		const user = await collection.findOne({ email })
-		return user
-	} catch (err) {
-		logger.error(`while finding user by email: ${email}`, err)
-		throw err
-	}
+    try {
+        const collection = await dbService.getCollection(USER_COLLECTION_NAME)
+        const user = await collection.findOne({ email })
+        return user
+    } catch (err) {
+        logger.error(`while finding user by email: ${email}`, err)
+        throw err
+    }
 }
 
 async function remove(userId) {
@@ -81,9 +73,8 @@ async function remove(userId) {
 
 async function update(user) {
     try {
-        // peek only updatable properties
         const userToSave = {
-            _id: ObjectId.createFromHexString(user._id), // needed for the returnd obj
+            _id: ObjectId.createFromHexString(user._id), 
             fullname: user.fullname,
             score: user.score,
         }
@@ -97,40 +88,46 @@ async function update(user) {
 }
 
 async function add(user) {
-	try {
-		// peek only updatable fields!
-		const userToAdd = {
-			email: user.email,
-			password: user.password,
-			fullname: user.fullname,
-			imgUrl: user.imgUrl,
-			isAdmin: user.isAdmin,
-		}
-		const collection = await dbService.getCollection(USER_COLLECTION_NAME)
-		await collection.insertOne(userToAdd)
-		return userToAdd
-	} catch (err) {
-		logger.error('cannot add user', err)
-		throw err
-	}
+    try {
+        const userToAdd = {
+            email: user.email,
+            password: user.password,
+            fullname: user.fullname,
+            imgUrl: user.imgUrl,
+            isAdmin: user.isAdmin,
+        }
+        const collection = await dbService.getCollection(USER_COLLECTION_NAME)
+        await collection.insertOne(userToAdd)
+        return userToAdd
+    } catch (err) {
+        logger.error('cannot add user', err)
+        throw err
+    }
 }
 
 function _buildCriteria(filterBy) {
+    const criteria = {}
+    if (filterBy.txt) {
+        const txtCriteria = { $regex: filterBy.txt, $options: 'i' }
+        criteria.$or = [
+            {
+                email: txtCriteria,
+            },
+            {
+                fullname: txtCriteria,
+            },
+        ]
+    }
 
-	const criteria = {}
-	if (filterBy.txt) {
-		const txtCriteria = { $regex: filterBy.txt, $options: 'i' }
-		criteria.$or = [
-			{
-				email: txtCriteria,
-			},
-			{
-				fullname: txtCriteria,
-			},
-		]
-	}
-	// if (filterBy.minBalance) {
-	// 	criteria.score = { $gte: filterBy.minBalance }
-	// }
-	return criteria
+    return criteria
+}
+
+async function addActivity(userId, activity) {
+    try {
+        const collection = await dbService.getCollection(USER_COLLECTION_NAME)
+        await collection.updateOne({ _id: ObjectId.createFromHexString(userId) }, { $push: { activities: activity } })
+    } catch (err) {
+        logger.error(`Failed to add activity to user ${userId}`, err)
+        throw err
+    }
 }
