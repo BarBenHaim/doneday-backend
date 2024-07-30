@@ -1,6 +1,6 @@
 import {logger} from './logger.service.js'
 import {Server} from 'socket.io'
-
+ 
 var gIo = null
 
 export function setupSocketAPI(http) {
@@ -42,6 +42,12 @@ export function setupSocketAPI(http) {
             logger.info(`Removing socket.userId for socket [id: ${socket.id}]`)
             delete socket.userId
         })
+        socket.on('board-updated', (board) => {
+            //console.log(socket)
+            logger.info(`board updated ${board._id} ${socket}`) 
+            gIo.to(socket.myTopic).emit('board-changed', board)
+            // delete socket.userId
+        })
 
     })
 }
@@ -69,7 +75,7 @@ async function emitToUser({ type, data, userId }) {
 async function broadcast({ type, data, room = null, userId }) {
     userId = userId.toString()
     
-    logger.info(`Broadcasting event: ${type}`)
+    logger.info(`Broadcasting event: ${type} room ${room}`)
     const excludedSocket = await _getUserSocket(userId)
     if (room && excludedSocket) {
         logger.info(`Broadcast to room ${room} excluding user: ${userId}`)
