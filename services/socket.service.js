@@ -98,7 +98,8 @@ async function broadcast({ type, data, room = null, userId }) {
         logger.info(`Broadcast to all excluding user: ${userId}`)
         sockets.forEach((targetSocket) => {
             if (targetSocket) {
-                targetSocket.emit(type, data);
+                gIo.to(targetSocket.id).emit(type, data)
+                // targetSocket.emit(type, data);
             }
         });
     } else if (room) {
