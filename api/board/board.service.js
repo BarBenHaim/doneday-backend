@@ -40,6 +40,7 @@ async function query(filterBy = { txt: '' }) {
         }
 
         const boards = boardCursor.toArray()
+        console.log(boards)
         return boards
     } catch (err) {
         logger.error('cannot find boards', err)
@@ -92,9 +93,9 @@ async function addBoard(board) {
         }
         await collection.insertOne(newBoard)
 
-        const activity = _createActivity(board.createdBy._id, 'create', 'board', newBoard._id);
-        newBoard.activities.push(activity);
-        await collection.updateOne({ _id: newBoard._id }, { $set: { activities: newBoard.activities } });
+        const activity = _createActivity(board.createdBy._id, 'create', 'board', newBoard._id)
+        newBoard.activities.push(activity)
+        await collection.updateOne({ _id: newBoard._id }, { $set: { activities: newBoard.activities } })
         return newBoard
     } catch (err) {
         logger.error('cannot insert board', err)
@@ -154,7 +155,7 @@ async function updateGroup(boardId, groupId, updatedGroup) {
         const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
         const board = await getById(boardId)
 
-        const groupIdx = board.groups.findIndex((group) => group._id === groupId)
+        const groupIdx = board.groups.findIndex(group => group._id === groupId)
         if (groupIdx === -1) throw new Error('Group not found')
 
         board.groups[groupIdx] = { ...board.groups[groupIdx], ...updatedGroup }
@@ -175,7 +176,7 @@ async function removeGroup(boardId, groupId) {
         const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
         const board = await getById(boardId)
 
-        const groupIdx = board.groups.findIndex((group) => group._id === groupId)
+        const groupIdx = board.groups.findIndex(group => group._id === groupId)
         if (groupIdx === -1) throw new Error('Group not found')
 
         const removedGroup = board.groups.splice(groupIdx, 1)
@@ -195,7 +196,7 @@ async function addTask(boardId, groupId, task) {
     try {
         const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
         const board = await getById(boardId)
-        const group = board.groups.find((group) => group._id === groupId)
+        const group = board.groups.find(group => group._id === groupId)
         if (!group) throw new Error('Group not found')
         const newTaskTemplate = _getEmptyTask()
         const newTask = {
@@ -221,10 +222,10 @@ async function updateTask(boardId, groupId, taskId, taskChanges) {
         const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
         const board = await getById(boardId)
 
-        const group = board.groups.find((group) => group._id === groupId)
+        const group = board.groups.find(group => group._id === groupId)
         if (!group) throw new Error('Group not found')
 
-        const taskIdx = group.tasks.findIndex((task) => task._id === taskId)
+        const taskIdx = group.tasks.findIndex(task => task._id === taskId)
         if (taskIdx === -1) throw new Error('Task not found')
 
         group.tasks[taskIdx] = { ...group.tasks[taskIdx], ...taskChanges }
@@ -244,9 +245,9 @@ async function removeTask(boardId, groupId, taskId) {
     try {
         const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
         const board = await getById(boardId)
-        const group = board.groups.find((group) => group._id === groupId)
+        const group = board.groups.find(group => group._id === groupId)
         if (!group) throw new Error('Group not found')
-        const taskIdx = group.tasks.findIndex((task) => task._id === taskId)
+        const taskIdx = group.tasks.findIndex(task => task._id === taskId)
         if (taskIdx === -1) throw new Error('Task not found')
         const removedTask = group.tasks.splice(taskIdx, 1)
 
@@ -266,11 +267,11 @@ async function getComments(boardId, groupId, taskId) {
 
         let item
         if (taskId) {
-            const group = board.groups.find((group) => group._id === groupId)
+            const group = board.groups.find(group => group._id === groupId)
             if (!group) throw new Error('Group not found')
-            item = group.tasks.find((task) => task._id === taskId)
+            item = group.tasks.find(task => task._id === taskId)
         } else if (groupId) {
-            item = board.groups.find((group) => group._id === groupId)
+            item = board.groups.find(group => group._id === groupId)
         } else {
             item = board
         }
@@ -292,11 +293,11 @@ async function addComment(boardId, groupId, taskId, comment) {
 
         let item
         if (taskId) {
-            const group = board.groups.find((group) => group._id === groupId)
+            const group = board.groups.find(group => group._id === groupId)
             if (!group) throw new Error('Group not found')
-            item = group.tasks.find((task) => task._id === taskId)
+            item = group.tasks.find(task => task._id === taskId)
         } else if (groupId) {
-            item = board.groups.find((group) => group._id === groupId)
+            item = board.groups.find(group => group._id === groupId)
         } else {
             item = board
         }
@@ -335,17 +336,17 @@ async function deleteComment(boardId, groupId, taskId, commentId, userId) {
 
         let item
         if (taskId) {
-            const group = board.groups.find((group) => group._id === groupId)
+            const group = board.groups.find(group => group._id === groupId)
             if (!group) throw new Error('Group not found')
-            item = group.tasks.find((task) => task._id === taskId)
+            item = group.tasks.find(task => task._id === taskId)
         } else if (groupId) {
-            item = board.groups.find((group) => group._id === groupId)
+            item = board.groups.find(group => group._id === groupId)
         } else {
             item = board
         }
 
         if (!item) throw new Error('Item not found')
-        const commentIdx = item.comments.findIndex((comment) => comment._id === commentId)
+        const commentIdx = item.comments.findIndex(comment => comment._id === commentId)
         if (commentIdx === -1) throw new Error('Comment not found')
         if (item.comments[commentIdx].byMember._id !== userId) throw new Error('Not authorized to delete this comment')
 
@@ -369,17 +370,17 @@ async function updateComment(boardId, groupId, taskId, commentId, updatedComment
 
         let item
         if (taskId) {
-            const group = board.groups.find((group) => group._id === groupId)
+            const group = board.groups.find(group => group._id === groupId)
             if (!group) throw new Error('Group not found')
-            item = group.tasks.find((task) => task._id === taskId)
+            item = group.tasks.find(task => task._id === taskId)
         } else if (groupId) {
-            item = board.groups.find((group) => group._id === groupId)
+            item = board.groups.find(group => group._id === groupId)
         } else {
             item = board
         }
 
         if (!item) throw new Error('Item not found')
-        const commentIdx = item.comments.findIndex((comment) => comment._id === commentId)
+        const commentIdx = item.comments.findIndex(comment => comment._id === commentId)
         if (commentIdx === -1) throw new Error('Comment not found')
         if (item.comments[commentIdx].byMember._id !== userId) throw new Error('Not authorized to update this comment')
 
@@ -396,57 +397,63 @@ async function updateComment(boardId, groupId, taskId, commentId, updatedComment
 }
 
 async function logActivity(boardId, userId, action, entity, entityId) {
-    const collection = await dbService.getCollection(BOARD_COLLECTION_NAME);
-    const board = await collection.findOne({ _id: ObjectId.createFromHexString(boardId) });
+    const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
+    const board = await collection.findOne({ _id: ObjectId.createFromHexString(boardId) })
 
     if (board) {
-        const activity = { userId, action, entity, entityId, timestamp: new Date() };
+        const activity = { userId, action, entity, entityId, timestamp: new Date() }
         if (!board.activities) {
-            board.activities = [];
+            board.activities = []
         }
-        board.activities.push(activity);
+        board.activities.push(activity)
 
         // Find and log activity in the specific entity
         if (entity === 'group') {
-            const group = board.groups.find(group => group._id === entityId);
+            const group = board.groups.find(group => group._id === entityId)
             if (group) {
                 if (!group.activities) {
-                    group.activities = [];
+                    group.activities = []
                 }
-                group.activities.push(activity);
+                group.activities.push(activity)
             }
         } else if (entity === 'task') {
             board.groups.forEach(group => {
-                const task = group.tasks.find(task => task._id === entityId);
+                const task = group.tasks.find(task => task._id === entityId)
                 if (task) {
                     if (!task.activities) {
-                        task.activities = [];
+                        task.activities = []
                     }
-                    task.activities.push(activity);
+                    task.activities.push(activity)
                 }
-            });
+            })
         } else if (entity === 'comment') {
             board.groups.forEach(group => {
                 group.tasks.forEach(task => {
-                    const comment = task.comments.find(comment => comment._id === entityId);
+                    const comment = task.comments.find(comment => comment._id === entityId)
                     if (comment) {
                         if (!comment.activities) {
-                            comment.activities = [];
+                            comment.activities = []
                         }
-                        comment.activities.push(activity);
+                        comment.activities.push(activity)
                     }
-                });
-            });
+                })
+            })
         }
 
-        await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { activities: board.activities, groups: board.groups } });
+        await collection.updateOne(
+            { _id: ObjectId.createFromHexString(boardId) },
+            { $set: { activities: board.activities, groups: board.groups } }
+        )
     }
 }
 
 async function getBoardActivities(boardId) {
     try {
         const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
-        const board = await collection.findOne({ _id: ObjectId.createFromHexString(boardId) }, { projection: { activities: 1 } })
+        const board = await collection.findOne(
+            { _id: ObjectId.createFromHexString(boardId) },
+            { projection: { activities: 1 } }
+        )
         return board.activities
     } catch (err) {
         logger.error(`Cannot get activities for board ${boardId}`, err)
@@ -541,6 +548,5 @@ const _createActivity = (userId, action, entity, entityId) => ({
     action,
     entity,
     entityId,
-    timestamp: new Date()
-  });
-  
+    timestamp: new Date(),
+})
