@@ -62,6 +62,11 @@ export function setupSocketAPI(http) {
             gIo.to(socket.myTopic).emit('board-removed', board);
         });
 
+        socket.on('task-updated', (task) => {
+            logger.info(`task updated ${task._id} ${socket}`);
+            gIo.to(socket.myTopic).emit('task-changed', task);
+        });
+
     });
 }
 

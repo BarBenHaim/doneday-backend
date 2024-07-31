@@ -83,19 +83,32 @@ async function removeBoard(boardId) {
 
 async function addBoard(board) {
     const { loggedinUser } = asyncLocalStorage.getStore()
+
     try {
+
         const collection = await dbService.getCollection(BOARD_COLLECTION_NAME)
 
+        const membersCollection = await dbService.getCollection('user') // Assuming 'members' is your collection name
+        const members = await membersCollection.find({}).toArray()
+
         const newBoardTemplate = _getEmptyBoard(board.title, board.label, board.createdBy)
+
         const newBoard = {
             ...newBoardTemplate,
             ...board,
+            members: members
         }
+
         await collection.insertOne(newBoard)
 
+
+
         const activity = _createActivity(board.createdBy._id, 'create', 'board', newBoard._id)
+
         newBoard.activities.push(activity)
+
         await collection.updateOne({ _id: newBoard._id }, { $set: { activities: newBoard.activities } })
+    console.log("addboard service newBoard", newBoard)
         return newBoard
     } catch (err) {
         logger.error('cannot insert board', err)
