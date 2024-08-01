@@ -1,7 +1,7 @@
 export default {
     dbURL:
         process.env.MONGO_URL ||
-        'mongodb+srv://barbenbh:96352414@doneday.taxyz0e.mongodb.net/?retryWrites=true&w=majority&appName=doneday',
+        'mongodb+srv://melnikovariella:Pe1CQUX96BxCTMnJ@cluster0.bivubcy.mongodb.net/',
 
     dbName: process.env.DB_NAME || 'doneday',
 }
