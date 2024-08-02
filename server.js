@@ -3,11 +3,13 @@ import path from 'path'
 import cors from 'cors'
 import express from 'express'
 import cookieParser from 'cookie-parser'
+import './config.js'
 
 import { authRoutes } from './api/auth/auth.routes.js'
 import { userRoutes } from './api/user/user.routes.js'
 import { boardRoutes } from './api/board/board.routes.js'
 import { setupSocketAPI } from './services/socket.service.js'
+import { aiRoutes } from './api/ai/ai.routes.js'
 
 import { setupAsyncLocalStorage } from './middlewares/setupAls.middleware.js'
 
@@ -32,6 +34,7 @@ app.all('*', setupAsyncLocalStorage)
 app.use('/api/auth', authRoutes)
 app.use('/api/user', userRoutes)
 app.use('/api/board', boardRoutes)
+app.use('/api/ai', aiRoutes)
 
 setupSocketAPI(server)
 
