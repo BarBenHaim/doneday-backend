@@ -2,3 +2,5 @@ node_modules
 logs
 config/crypt_key
 api/data/users.json
+.env
+config/openai_key
