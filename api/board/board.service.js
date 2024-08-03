@@ -40,7 +40,6 @@ async function query(filterBy = { txt: '' }) {
         }
 
         const boards = boardCursor.toArray()
-        console.log(boards)
         return boards
     } catch (err) {
         logger.error('cannot find boards', err)
@@ -105,7 +104,6 @@ async function addBoard(board) {
         newBoard.activities.push(activity)
 
         await collection.updateOne({ _id: newBoard._id }, { $set: { activities: newBoard.activities } })
-        console.log('addboard service newBoard', newBoard)
         return newBoard
     } catch (err) {
         logger.error('cannot insert board', err)

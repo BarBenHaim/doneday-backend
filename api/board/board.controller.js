@@ -28,16 +28,12 @@ export async function getBoardById(req, res) {
 
 export async function addBoard(req, res) {
     const { loggedinUser, body: board } = req
-    console.log('addboard controller:', board)
 
     try {
         board.createdBy = loggedinUser
-        console.log('addboard1 controller')
         const addedBoard = await boardService.addBoard(board)
-        console.log('addboard controller2')
 
         socketService.broadcast({ type: 'board-added', data: addedBoard, room: board._id, userId: loggedinUser._id })
-        console.log('addboard controller3')
 
         res.json(addedBoard)
     } catch (err) {
