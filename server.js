@@ -3,6 +3,7 @@ import path from 'path'
 import cors from 'cors'
 import express from 'express'
 import cookieParser from 'cookie-parser'
+import bodyParser from 'body-parser';
 import './config.js'
 
 import { authRoutes } from './api/auth/auth.routes.js'
@@ -18,7 +19,8 @@ const server = http.createServer(app)
 
 // Express App Config
 app.use(cookieParser())
-app.use(express.json())
+app.use(express.json({limit : '50mb',extended : true}))
+// app.use(express.json())
 
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.resolve('public')))
