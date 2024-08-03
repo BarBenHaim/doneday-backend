@@ -72,7 +72,7 @@ async function removeBoard(boardId) {
 
         const deletedBoard = await collection.deleteOne({ _id: ObjectId.createFromHexString(boardId) })
 
-        if (!deletedBoard.deletedCount) throw 'Not your board'
+        // if (!deletedBoard.deletedCount) throw 'Not your board'
 
         return boardId
     } catch (err) {
