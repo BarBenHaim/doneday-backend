@@ -24,32 +24,6 @@ import {
 } from './board.controller.js'
 
 const router = express.Router()
-
-// We can add a middleware for the entire router:
-// router.use(requireAuth)
-
-// router.get('/', log, getBoards)
-// router.get('/initDB', initDB)
-// router.get('/:boardId', log, getBoardById)
-// router.post('/', log, addBoard)
-// router.put('/:boardId', log, updateBoard)
-// router.delete('/:boardId', log, removeBoard)
-// // router.delete('/:id', requireAdmin, removeBoard)
-
-// router.post('/:boardId/group', log, addGroup)
-// router.put('/:boardId/:groupId', log, updateGroup)
-// router.delete('/:boardId/:groupId', log, removeGroup)
-
-// router.post('/:boardId/:groupId/task', log, addTask)
-// router.put('/:boardId/:groupId/:taskId', log, updateTask)
-// router.delete('/:boardId/:groupId/:taskId', log, removeTask)
-
-// router.post('/:boardId/:groupId/:taskId/comment', log, addComment)
-// router.put('/:boardId/:groupId/:taskId/:commentId', log, updateComment)
-// router.delete('/:boardId/:groupId/:taskId/:commentId', log, deleteComment)
-// router.get('/:boardId/:groupId/:taskId/comment', log, getComments)
-
-// router.get('/:boardId/activities', log, getBoardActivities)
 router.get('/', log, getBoards)
 router.get('/initDB', initDB)
 router.get('/:boardId', log, requireAuth, getBoardById)
