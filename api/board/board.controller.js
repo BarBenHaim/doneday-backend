@@ -1,8 +1,6 @@
 import { logger } from '../../services/logger.service.js'
 import { socketService } from '../../services/socket.service.js'
 import { readJsonFile } from '../../services/util.service.js'
-import { getUserActivity } from '../user/user.controller.js'
-import { userService } from '../user/user.service.js'
 import { boardService as boardService } from './board.service.js'
 
 export async function getBoards(req, res) {
@@ -16,6 +14,7 @@ export async function getBoards(req, res) {
 }
 
 export async function getBoardById(req, res) {
+
     try {
         const boardId = req.params.boardId
         const board = await boardService.getById(boardId)
@@ -47,8 +46,6 @@ export async function updateBoard(req, res) {
     try {
         const updatedBoard = await boardService.updateBoard(board)
 
-        await boardService.logActivity(board._id, loggedinUser._id, 'update', 'board', board._id)
-        
         socketService.broadcast({ type: 'board-changed', data: updatedBoard, room: board._id, userId: loggedinUser._id })
 
         res.json(updatedBoard)
@@ -63,8 +60,6 @@ export async function removeBoard(req, res) {
     try {
         const boardId = req.params.boardId
         const removedBoard = await boardService.removeBoard(boardId)
-
-        await boardService.logActivity(boardId, loggedinUser._id, 'delete', 'board', boardId)
 
         socketService.broadcast({ type: 'board-removed', data: boardId, 
             // room: boardId,
@@ -105,15 +100,12 @@ export async function addGroup(req, res) {
 
     try {
         const boardId = req.params.boardId
-        const group = req.body // Receive the whole body
+        const group = req.body 
         const newGroup = await boardService.addGroup(boardId, group)
-
-        await boardService.logActivity(boardId, loggedinUser._id, 'create', 'group', newGroup._id)
 
         socketService.broadcast({ type: 'group-added', data: newGroup, room: boardId, userId: loggedinUser._id })
 
-
-        res.json(newGroup) // Return the entire newGroup object
+        res.json(newGroup) 
     } catch (err) {
         logger.error('Failed to add group', err)
         res.status(400).send({ err: 'Failed to add group' })
@@ -128,8 +120,6 @@ export async function updateGroup(req, res) {
         const groupId = req.params.groupId
         const groupChanges = req.body
         const updatedGroup = await boardService.updateGroup(boardId, groupId, groupChanges)
-
-        await boardService.logActivity(boardId, loggedinUser._id, 'update', 'group', groupId)
 
         socketService.broadcast({ type: 'group-updated', data: updatedGroup, room: boardId, userId: loggedinUser._id })
 
@@ -147,8 +137,6 @@ export async function removeGroup(req, res) {
         const boardId = req.params.boardId
         const groupId = req.params.groupId
         const removedGroup = await boardService.removeGroup(boardId, groupId)
-
-        await boardService.logActivity(boardId, loggedinUser._id, 'delete', 'group', groupId)
 
         socketService.broadcast({ type: 'group-removed', data: removedGroup, room: boardId, userId: loggedinUser._id })
 
@@ -168,8 +156,6 @@ export async function addTask(req, res) {
         const groupId = req.params.groupId
         const task = req.body
         const addedTask = await boardService.addTask(boardId, groupId, task)
-
-        await boardService.logActivity(boardId, loggedinUser._id, 'create', 'task', addedTask._id)
 
         socketService.broadcast({ type: 'task-added', data: addedTask, room: boardId, userId: loggedinUser._id })
 
@@ -191,8 +177,6 @@ export async function updateTask(req, res) {
         const taskChanges = req.body
         const updatedTask = await boardService.updateTask(boardId, groupId, taskId, taskChanges)
 
-        await boardService.logActivity(boardId, loggedinUser._id, 'update', 'task', taskId)
-
         socketService.broadcast({ type: 'task-changed', data: updatedTask, room: boardId, userId: loggedinUser._id })
 
 
@@ -211,8 +195,6 @@ export async function removeTask(req, res) {
         const groupId = req.params.groupId
         const taskId = req.params.taskId
         const removedTask = await boardService.removeTask(boardId, groupId, taskId)
-
-        await boardService.logActivity(boardId, loggedinUser._id, 'delete', 'task', taskId)
 
         socketService.broadcast({ type: 'task-removed', data: removedTask, room: boardId, userId: loggedinUser._id })
 
@@ -250,8 +232,6 @@ export async function addComment(req, res) {
         comment = await boardService.addComment(boardId, groupId, taskId, comment)
         comment.byMember = loggedinUser
 
-        await boardService.logActivity(boardId, loggedinUser._id, 'create', 'comment', comment._id)
-
         socketService.broadcast({ type: 'comment-added', data: comment, room: boardId, userId: loggedinUser._id })
   
         res.json(comment)
@@ -272,8 +252,6 @@ export async function deleteComment(req, res) {
         const removedId = await boardService.deleteComment(boardId, groupId, taskId, commentId, loggedinUser._id)
 
         if (removedId) {
-
-            await boardService.logActivity(boardId, loggedinUser._id, 'delete', 'comment', commentId)
 
             socketService.broadcast({ type: 'comment-removed', data: commentId, room: boardId, userId: loggedinUser._id })
 
@@ -305,8 +283,6 @@ export async function updateComment(req, res) {
             updatedComment,
             loggedinUser._id
         )
-
-        await boardService.logActivity(boardId, loggedinUser._id, 'update', 'comment', commentId)
 
         socketService.broadcast({ type: 'comment-update', data: savedComment,room: boardId, userId: loggedinUser._id })
 
