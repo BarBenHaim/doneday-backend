@@ -394,7 +394,7 @@ async function updateComment(boardId, groupId, taskId, commentId, updatedComment
 
         item.comments[commentIdx] = { ...item.comments[commentIdx], ...updatedComment }
 
-        // await logActivity(boardId, loggedinUser._id, 'update', 'comment', commentId)
+        await logActivity(boardId, loggedinUser._id, 'update', 'comment', commentId)
 
         await collection.updateOne({ _id: ObjectId.createFromHexString(boardId) }, { $set: { groups: board.groups } })
         return item.comments[commentIdx]
