@@ -1,9 +1,5 @@
-export default  {
-  // dbURL: 'mongodb://127.0.0.1:27017',
-  dbURL:  'mongodb+srv://melnikovariella:Pe1CQUX96BxCTMnJ@cluster0.bivubcy.mongodb.net/',
-  dbName : 'doneday',
-  isGuestMode: true,
-
+export default {
+    dbURL: 'mongodb+srv://BarBh:0526618184@cluster0.eto7tow.mongodb.net/',
+    dbName: 'doneday',
+    isGuestMode: true,
 }
-
-
