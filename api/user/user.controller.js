@@ -1,6 +1,5 @@
 import {userService} from './user.service.js'
 import {logger} from '../../services/logger.service.js'
-import {socketService} from '../../services/socket.service.js'
 
 export async function getUser(req, res) {
     try {
@@ -46,13 +45,6 @@ export async function updateUser(req, res) {
         res.status(400).send({ err: 'Failed to update user' })
     }
 }
-
-// export function getUserActivity( fullname, action) {
-//     return {
-//         text: `${fullname} has ${action}`,
-//         timestamp: Date.now()
-//     };
-// }
 
 export function getUserActivity(fullname, action) {
     return {
