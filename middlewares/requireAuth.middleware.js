@@ -9,15 +9,15 @@ export async function requireAuth(req, res, next) {
         req.loggedinUser = loggedinUser
 
         if (config.isGuestMode && !loggedinUser) {
-            const user = await authService.login('oriteicher5@gmail.com', '123456')
-            req.loggedinUser = user 
+            const user = await authService.login('barbenbh@gmail.com', '123456')
+            req.loggedinUser = user
             const loginToken = authService.getLoginToken(user)
             res.cookie('loginToken', loginToken, { sameSite: 'None', secure: true })
             return next()
-        }
-        if (!loggedinUser) return res.status(401).send('Not Authenticated')
+        } else if (!loggedinUser) return res.status(401).send('Not Authenticated')
         next()
     } catch (err) {
+        console.log(err)
         logger.error('Failed to authenticate user', err)
         res.status(401).send('Not Auth')
     }
