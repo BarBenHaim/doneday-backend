@@ -18,7 +18,7 @@ const server = http.createServer(app)
 
 // Express App Config
 app.use(cookieParser())
-app.use(express.json({limit : '50mb',extended : true}))
+app.use(express.json({ limit: '50mb', extended: true }))
 // app.use(express.json())
 
 if (process.env.NODE_ENV === 'production') {
@@ -38,6 +38,10 @@ app.use('/api/board', boardRoutes)
 app.use('/api/ai', aiRoutes)
 
 setupSocketAPI(server)
+
+app.get('/api/healthcheck', (req, res) => {
+    res.sendStatus(200)
+})
 
 app.get('/**', (req, res) => {
     res.sendFile(path.resolve('public/index.html'))
